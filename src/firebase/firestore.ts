@@ -17,7 +17,8 @@ export const COLLECTIONS = {
   USERS: 'users',
   GROUPS: 'groups',
   EXPENSES: 'expenses',
-  SETTLEMENTS: 'settlements'
+  SETTLEMENTS: 'settlements',
+  FRIENDS: 'friends'
 };
 
 // User operations
@@ -115,4 +116,28 @@ export const getGroupSettlements = async (groupId: string | null) => {
   
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+// Friend operations
+export const addFriend = async (userId: string, friendId: string) => {
+  return await addDoc(collection(db, COLLECTIONS.FRIENDS), {
+    userId,
+    friendId,
+    createdAt: serverTimestamp()
+  });
+};
+
+export const getUserFriends = async (userId: string) => {
+  const q = query(
+    collection(db, COLLECTIONS.FRIENDS),
+    where('userId', '==', userId)
+  );
+  const snapshot = await getDocs(q);
+  const friendIds = snapshot.docs.map(doc => doc.data().friendId);
+  
+  if (friendIds.length === 0) return [];
+  
+  // Fetch friend user data
+  const friends = await getUsers(friendIds);
+  return friends;
 };

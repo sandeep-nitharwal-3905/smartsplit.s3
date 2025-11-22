@@ -151,6 +151,16 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() &&
                                request.auth.uid == resource.data.from;
     }
+    
+    // Friends collection
+    match /friends/{friendId} {
+      allow read: if isAuthenticated() && 
+                     (request.auth.uid == resource.data.userId ||
+                      request.auth.uid == resource.data.friendId);
+      allow create: if isAuthenticated();
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid == resource.data.userId;
+    }
   }
 }
 ```

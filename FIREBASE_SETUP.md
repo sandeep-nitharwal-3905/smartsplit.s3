@@ -82,6 +82,16 @@ service cloud.firestore {
     match /settlements/{settlementId} {
       allow read, write: if request.auth != null;
     }
+    
+    // Friends collection
+    match /friends/{friendId} {
+      allow read: if request.auth != null && 
+                     (request.auth.uid == resource.data.userId ||
+                      request.auth.uid == resource.data.friendId);
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && 
+                       request.auth.uid == resource.data.userId;
+    }
   }
 }
 ```

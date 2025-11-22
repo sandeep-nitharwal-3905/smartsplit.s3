@@ -10,7 +10,9 @@ import {
   deleteExpense as deleteFirebaseExpense,
   createSettlement as createFirebaseSettlement,
   getUserByEmail,
-  getUsers
+  getUsers,
+  addFriend as addFirebaseFriend,
+  getUserFriends
 } from './firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { db } from './firebase/config';
@@ -102,16 +104,65 @@ export default function ExpenseSplitApp() {
     if (currentUser) {
       loadUserData();
       loadUserExpenses();
+      loadUserFriends();
     }
   }, [currentUser]);
+
+  const loadUserFriends = async () => {
+    if (!currentUser) return;
+    try {
+      const userFriends = await getUserFriends(currentUser.id);
+      setFriends(userFriends as User[]);
+    } catch (error) {
+      console.error('Error loading friends:', error);
+    }
+  };
 
   const loadUserExpenses = async () => {
     if (!currentUser) return;
     try {
       const userExpenses = await getUserExpenses(currentUser.id);
       setExpenses(userExpenses as Expense[]);
+      
+      // Load user data for all participants in expenses
+      await loadUsersFromExpenses(userExpenses as Expense[]);
     } catch (error) {
       console.error('Error loading expenses:', error);
+    }
+  };
+
+  const loadUsersFromExpenses = async (expensesList: Expense[]) => {
+    try {
+      // Collect all unique user IDs from expenses
+      const userIds = new Set<string>();
+      expensesList.forEach(expense => {
+        if (expense.paidBy !== currentUser?.id) {
+          userIds.add(expense.paidBy);
+        }
+        expense.participants.forEach(pId => {
+          if (pId !== currentUser?.id) {
+            userIds.add(pId);
+          }
+        });
+      });
+
+      // Filter out users we already have
+      const unknownUserIds = Array.from(userIds).filter(
+        id => !memberCache[id] && !friends.find(f => f.id === id)
+      );
+
+      if (unknownUserIds.length > 0) {
+        const users = await getUsers(unknownUserIds);
+        const newCache = { ...memberCache };
+        users.forEach((user: any) => {
+          if (user) {
+            newCache[user.id] = user as User;
+          }
+        });
+        setMemberCache(newCache);
+      }
+    } catch (error) {
+      console.error('Error loading users from expenses:', error);
     }
   };
 
@@ -163,6 +214,9 @@ export default function ExpenseSplitApp() {
     try {
       const groupExpenses = await getGroupExpenses(selectedGroup.id);
       setExpenses(groupExpenses as Expense[]);
+      
+      // Load user data for all participants in expenses
+      await loadUsersFromExpenses(groupExpenses as Expense[]);
     } catch (error) {
       console.error('Error loading expenses:', error);
     }
@@ -306,9 +360,19 @@ export default function ExpenseSplitApp() {
     try {
       const friend = await getUserByEmail(friendEmail);
       if (friend && friend.id !== currentUser.id) {
+        // Check if already a friend
+        if (friends.find(f => f.id === friend.id)) {
+          alert('This user is already your friend');
+          return;
+        }
+        
+        // Add to Firestore
+        await addFirebaseFriend(currentUser.id, friend.id);
+        
         setFriends([...friends, friend as User]);
         setFriendEmail('');
         setView('dashboard');
+        alert('Friend added successfully!');
       } else {
         alert('Friend not found or invalid email.');
       }
@@ -374,7 +438,17 @@ export default function ExpenseSplitApp() {
       };
       
       const docRef = await createFirebaseExpense(newExpense);
-      setExpenses([...expenses, { id: docRef.id, ...newExpense }]);
+      const updatedExpenses = [...expenses, { id: docRef.id, ...newExpense }];
+      setExpenses(updatedExpenses);
+      
+      // Reload expenses to ensure everything is up to date
+      if (selectedGroup) {
+        await loadGroupExpenses();
+      } else {
+        await loadUserExpenses();
+      }
+      
+      alert('Settlement recorded successfully!');
     } catch (error) {
       console.error('Error settling up:', error);
       alert('Failed to settle up');
@@ -555,11 +629,21 @@ export default function ExpenseSplitApp() {
                   {Object.entries(balances).map(([key, amount]) => {
                     const [fromId, toId] = key.split('-');
                     return (
-                      <div key={key} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <span className="text-sm">
-                          {getUserName(fromId)} owes {getUserName(toId)}
-                        </span>
-                        <span className="font-bold text-teal-600">${amount.toFixed(2)}</span>
+                      <div key={key} className="p-3 bg-gray-50 rounded">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">
+                            {getUserName(fromId)} owes {getUserName(toId)}
+                          </span>
+                          <span className="font-bold text-teal-600">${amount.toFixed(2)}</span>
+                        </div>
+                        {fromId === currentUser?.id && (
+                          <button
+                            onClick={() => handleSettleUp(fromId, toId, amount)}
+                            className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                          >
+                            Settle Up
+                          </button>
+                        )}
                       </div>
                     );
                   })}
