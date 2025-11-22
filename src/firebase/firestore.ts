@@ -67,6 +67,15 @@ export const getUserGroups = async (userId: string) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+export const getGroup = async (groupId: string) => {
+  const groupDoc = await getDoc(doc(db, COLLECTIONS.GROUPS, groupId));
+  return groupDoc.exists() ? { id: groupDoc.id, ...groupDoc.data() } : null;
+};
+
+export const updateGroup = async (groupId: string, groupData: any) => {
+  return await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), groupData);
+};
+
 export const deleteGroup = async (groupId: string) => {
   await deleteDoc(doc(db, COLLECTIONS.GROUPS, groupId));
 };
