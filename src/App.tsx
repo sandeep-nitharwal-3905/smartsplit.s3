@@ -818,7 +818,7 @@ export default function ExpenseSplitApp() {
             {emailVerificationSent && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  📧 Verification email sent! Please check your inbox and verify your email before logging in.
+                  📧 Verification email sent! Please check your inbox or spam folder and verify your email before logging in.
                 </p>
               </div>
             )}
@@ -884,50 +884,59 @@ export default function ExpenseSplitApp() {
         </nav>
 
         <div className="max-w-6xl mx-auto p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6">
+          {/* Main Action Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
             <button
               onClick={() => setView('addGroup')}
-              className="bg-white p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition flex items-center justify-center gap-3"
+              className="bg-gradient-to-r from-teal-500 to-teal-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
             >
-              <Users className="w-6 h-6 text-teal-500" />
-              <span className="font-semibold">Create Group</span>
+              <Users className="w-7 h-7" />
+              <div className="text-left">
+                <div className="font-bold text-lg">Create Group</div>
+                <div className="text-xs opacity-90">Start splitting expenses</div>
+              </div>
             </button>
             
             <button
               onClick={() => setShowJoinLinkModal(true)}
-              className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition flex items-center justify-center gap-3"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
             >
-              <LinkIcon className="w-6 h-6 text-teal-500" />
-              <span className="font-semibold">Join Group</span>
-            </button>
-            
-            <button
-              onClick={() => setView('addFriend')}
-              className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition flex items-center justify-center gap-3"
-            >
-              <User className="w-6 h-6 text-teal-500" />
-              <span className="font-semibold">Add Friend</span>
-            </button>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <button
-              onClick={() => {
-                setSelectedGroup(null);
-                setView('addExpense');
-              }}  className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition flex items-center justify-center gap-3"
-            >
-              <Plus className="w-6 h-6 text-teal-500" />
-              <span className="font-semibold">Add Expense</span>
+              <LinkIcon className="w-7 h-7" />
+              <div className="text-left">
+                <div className="font-bold text-lg">Join Group</div>
+                <div className="text-xs opacity-90">Enter group ID or link</div>
+              </div>
             </button>
           </div>
 
+          {/* Info Banner for first-time users */}
+          {groups.length === 0 && expenses.length === 0 && (
+            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 mb-2">👋 Welcome to SplitEasy!</h3>
+              <p className="text-sm text-blue-800 mb-2">Get started by creating a group or joining an existing one:</p>
+              <ul className="text-sm text-blue-700 space-y-1 ml-4 list-disc">
+                <li><strong>Create Group:</strong> Perfect for roommates, trips, or shared expenses</li>
+                <li><strong>Join Group:</strong> Someone shared a group link with you? Join here!</li>
+              </ul>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Your Groups
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Your Groups
+                </h2>
+                <button
+                  onClick={() => setView('addFriend')}
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1"
+                  title="Manage your friends to easily add them to groups"
+                >
+                  <User className="w-4 h-4" />
+                  Friends ({friends.length})
+                </button>
+              </div>
               {groups.length === 0 ? (
                 <p className="text-gray-500">No groups yet. Create one to get started!</p>
               ) : (
@@ -1121,38 +1130,67 @@ export default function ExpenseSplitApp() {
                 <p className="text-gray-500">No expenses yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {expenses.map(expense => (
-                    <div key={expense.id} className="p-3 border border-gray-200 rounded">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{expense.description}</h3>
-                          <p className="text-sm text-gray-600">
-                            Paid by {getUserName(expense.paidBy)}
-                          </p>
-                          {expense.splitAmounts && (
-                            <div className="mt-1 text-xs text-gray-500">
-                              <span className="font-medium">Custom split:</span>
-                              {expense.participants.map((pId, idx) => (
-                                <span key={pId}>
-                                  {idx > 0 && ', '}
-                                  {getUserName(pId)}: ${expense.splitAmounts![pId].toFixed(2)}
-                                </span>
-                              ))}
+                  {expenses.map(expense => {
+                    // Calculate current user's share
+                    const userShare = currentUser && expense.participants.includes(currentUser.id)
+                      ? (expense.splitAmounts && expense.splitAmounts[currentUser.id]
+                          ? expense.splitAmounts[currentUser.id]
+                          : expense.amount / expense.participants.length)
+                      : 0;
+                    
+                    const isPayer = expense.paidBy === currentUser?.id;
+                    
+                    return (
+                      <div key={expense.id} className="p-3 border border-gray-200 rounded">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{expense.description}</h3>
+                            <p className="text-sm text-gray-600">
+                              Paid by {getUserName(expense.paidBy)}
+                            </p>
+                            
+                            {/* Show user's share and total */}
+                            <div className="mt-2 space-y-1">
+                              {isPayer ? (
+                                <div className="text-sm">
+                                  <span className="text-green-600 font-medium">You paid: ${expense.amount.toFixed(2)}</span>
+                                  {expense.participants.length > 1 && (
+                                    <span className="text-gray-600"> (Your share: ${userShare.toFixed(2)})</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-sm">
+                                  <span className="text-orange-600 font-medium">Your share: ${userShare.toFixed(2)}</span>
+                                  <span className="text-gray-600"> of ${expense.amount.toFixed(2)}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className="text-right flex items-center gap-2">
-                          <span className="font-bold text-teal-600">${expense.amount.toFixed(2)}</span>
-                          <button
-                            onClick={() => deleteExpense(expense.id)}
-                            className="p-1 hover:bg-red-100 rounded"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
+                            
+                            {expense.splitAmounts && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                <span className="font-medium">Custom split:</span>
+                                {expense.participants.map((pId, idx) => (
+                                  <span key={pId}>
+                                    {idx > 0 && ', '}
+                                    {getUserName(pId)}: ${expense.splitAmounts![pId].toFixed(2)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0">
+                            <button
+                              onClick={() => deleteExpense(expense.id)}
+                              className="p-1 hover:bg-red-100 rounded"
+                              title="Delete expense"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1185,15 +1223,46 @@ export default function ExpenseSplitApp() {
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder="e.g., Roommates, Trip to Paris"
+                  placeholder="e.g., Roommates, Trip to Paris, Weekend Getaway"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Add Members (Email)</label>
-                <p className="text-xs text-gray-500 mb-2">
-                  For demo: Create multiple accounts to add as members
-                </p>
+                <label className="block text-sm font-medium mb-2">Add Members</label>
+                
+                {/* Quick add from friends */}
+                {friends.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-600 mb-2">Quick add from your friends:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {friends.map(friend => {
+                        const isAdded = groupMembers.includes(friend.id);
+                        return (
+                          <button
+                            key={friend.id}
+                            onClick={() => {
+                              if (isAdded) {
+                                setGroupMembers(groupMembers.filter(id => id !== friend.id));
+                              } else {
+                                setGroupMembers([...groupMembers, friend.id]);
+                              }
+                            }}
+                            className={`px-3 py-1 rounded-full text-sm transition ${
+                              isAdded
+                                ? 'bg-teal-100 text-teal-700 border-2 border-teal-500'
+                                : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                            }`}
+                          >
+                            {isAdded && '✓ '}{friend.name || friend.email}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Add by email */}
+                <p className="text-xs text-gray-600 mb-2">Add new members by email:</p>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="email"
@@ -1250,15 +1319,21 @@ export default function ExpenseSplitApp() {
             <button onClick={() => setView('dashboard')} className="hover:bg-teal-600 p-2 rounded">
               ← Back
             </button>
-            <h1 className="text-lg sm:text-2xl font-bold">Add Friend</h1>
+            <h1 className="text-lg sm:text-2xl font-bold">Manage Friends</h1>
           </div>
         </nav>
 
         <div className="max-w-4xl mx-auto p-4 sm:p-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                💡 Add friends here to quickly include them when creating groups. You can also add people directly by email when creating a group.
+              </p>
+            </div>
+            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Friend's Email</label>
+                <label className="block text-sm font-medium mb-2">Add Friend by Email</label>
                 <input
                   type="email"
                   value={friendEmail}
