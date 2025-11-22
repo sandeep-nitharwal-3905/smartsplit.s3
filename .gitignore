@@ -23,8 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-# Env files
+# Environment variables
 .env
+.env.local
 .env.*.local
-# md files
-*.md
+
+# Documentation (excluding important docs)
+# Add specific .md files here if needed
+# *.md
