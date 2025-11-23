@@ -98,6 +98,10 @@ export default function ExpenseSplitApp() {
   const [showJoinLinkModal, setShowJoinLinkModal] = useState(false);
   const [joinGroupId, setJoinGroupId] = useState('');
 
+  // Group created success modal
+  const [showGroupCreatedModal, setShowGroupCreatedModal] = useState(false);
+  const [createdGroupId, setCreatedGroupId] = useState('');
+
   // Notification states
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [previousExpenses, setPreviousExpenses] = useState<Expense[]>([]);
@@ -488,9 +492,13 @@ export default function ExpenseSplitApp() {
       
       const docRef = await createFirebaseGroup(newGroup);
       setGroups([...groups, { id: docRef.id, ...newGroup }]);
+      
+      // Show success modal with share options
+      setCreatedGroupId(docRef.id);
+      setShowGroupCreatedModal(true);
+      
       setGroupName('');
       setGroupMembers([]);
-      setView('dashboard');
     } catch (error) {
       console.error('Error creating group:', error);
       alert('Failed to create group');
@@ -663,6 +671,64 @@ export default function ExpenseSplitApp() {
     if (cachedMember) return cachedMember.name;
     // Return Unknown as fallback
     return 'Unknown';
+  };
+
+  const formatDateTime = (dateInput: any) => {
+    if (!dateInput) return 'Unknown date';
+    
+    let date: Date;
+    
+    // Handle Firebase Timestamp object
+    if (dateInput.toDate && typeof dateInput.toDate === 'function') {
+      date = dateInput.toDate();
+    } 
+    // Handle string format: "23 November 2025 at 21:47:07 UTC+5:30"
+    else if (typeof dateInput === 'string') {
+      const firebaseMatch = dateInput.match(/(\d+)\s+(\w+)\s+(\d+)\s+at\s+(\d+):(\d+):(\d+)/);
+      if (firebaseMatch) {
+        const [, day, monthName, year, hours, minutes, seconds] = firebaseMatch;
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+        const month = monthNames.indexOf(monthName);
+        
+        if (month !== -1) {
+          date = new Date(parseInt(year), month, parseInt(day), 
+                         parseInt(hours), parseInt(minutes), parseInt(seconds));
+        } else {
+          date = new Date(dateInput);
+        }
+      } else {
+        // Try standard Date parsing (ISO format)
+        date = new Date(dateInput);
+      }
+    } 
+    // Handle Date object or timestamp
+    else {
+      date = new Date(dateInput);
+    }
+    
+    // Check if date is invalid
+    if (isNaN(date.getTime())) return 'Invalid date';
+    
+    const now = new Date();
+
+    // Format date and time
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+
+    // Show year only if different from current year
+    const dateStr = year === now.getFullYear() 
+      ? `${month} ${day}`
+      : `${month} ${day}, ${year}`;
+    
+    return `${dateStr} at ${displayHours}:${displayMinutes} ${ampm}`;
   };
 
   const deleteExpense = async (expenseId: string) => {
@@ -911,10 +977,10 @@ export default function ExpenseSplitApp() {
 
           {/* Info Banner for first-time users */}
           {groups.length === 0 && expenses.length === 0 && (
-            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">👋 Welcome to SmartSplit!</h3>
-              <p className="text-sm text-blue-800 mb-2">Get started by creating a group or joining an existing one:</p>
-              <ul className="text-sm text-blue-700 space-y-1 ml-4 list-disc">
+            <div className="mb-4 sm:mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+              <h3 className="font-semibold text-blue-900 mb-1.5 sm:mb-2 text-sm sm:text-base">👋 Welcome to SmartSplit!</h3>
+              <p className="text-xs sm:text-sm text-blue-800 mb-1.5 sm:mb-2">Get started by creating a group or joining an existing one:</p>
+              <ul className="text-xs sm:text-sm text-blue-700 space-y-1 ml-4 list-disc">
                 <li><strong>Create Group:</strong> Perfect for roommates, trips, or shared expenses</li>
                 <li><strong>Join Group:</strong> Someone shared a group link with you? Join here!</li>
               </ul>
@@ -922,25 +988,25 @@ export default function ExpenseSplitApp() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Users className="w-5 h-5" />
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                   Your Groups
                 </h2>
                 <button
                   onClick={() => setView('addFriend')}
-                  className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1"
+                  className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1 self-start"
                   title="Manage your friends to easily add them to groups"
                 >
-                  <User className="w-4 h-4" />
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Friends ({friends.length})
                 </button>
               </div>
               {groups.length === 0 ? (
-                <p className="text-gray-500">No groups yet. Create one to get started!</p>
+                <p className="text-sm sm:text-base text-gray-500">No groups yet. Create one to get started!</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {groups.map(group => (
                     <div
                       key={group.id}
@@ -948,39 +1014,39 @@ export default function ExpenseSplitApp() {
                         setSelectedGroup(group);
                         setView('groupDetail');
                       }}
-                      className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                      className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
                     >
-                      <h3 className="font-semibold">{group.name}</h3>
-                      <p className="text-sm text-gray-600">{group.members.length} members</p>
+                      <h3 className="font-semibold text-sm sm:text-base truncate">{group.name}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <ArrowLeftRight className="w-5 h-5" />
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
+                <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 Overall Balances
               </h2>
               {Object.keys(balances).length === 0 ? (
-                <p className="text-gray-500">All settled up!</p>
+                <p className="text-sm sm:text-base text-gray-500">All settled up!</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {Object.entries(balances).map(([key, amount]) => {
                     const [fromId, toId] = key.split('-');
                     return (
-                      <div key={key} className="p-3 bg-gray-50 rounded">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">
+                      <div key={key} className="p-2.5 sm:p-3 bg-gray-50 rounded">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                          <span className="text-xs sm:text-sm">
                             {getUserName(fromId)} owes {getUserName(toId)}
                           </span>
-                          <span className="font-bold text-teal-600">${amount.toFixed(2)}</span>
+                          <span className="font-bold text-teal-600 text-sm sm:text-base">${amount.toFixed(2)}</span>
                         </div>
                         {fromId === currentUser?.id && (
                           <button
                             onClick={() => handleSettleUp(fromId, toId, amount)}
-                            className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                            className="text-xs sm:text-sm bg-green-500 text-white px-3 py-1 sm:py-1.5 rounded hover:bg-green-600"
                           >
                             Settle Up
                           </button>
@@ -996,10 +1062,10 @@ export default function ExpenseSplitApp() {
         
         {/* Join Group Modal */}
         {showJoinLinkModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md">
-              <h2 className="text-xl sm:text-2xl font-bold mb-4">Join a Group</h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-4">Enter the Group ID to join</p>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Join a Group</h2>
+              <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4">Enter the Group ID to join</p>
               
               <input
                 type="text"
@@ -1007,13 +1073,13 @@ export default function ExpenseSplitApp() {
                 onChange={(e) => setJoinGroupId(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleJoinGroup()}
                 placeholder="Enter Group ID"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 mb-4"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 mb-3 sm:mb-4"
               />
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={handleJoinGroup}
-                  className="flex-1 bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-600 transition font-semibold"
+                  className="flex-1 bg-teal-500 text-white py-2 sm:py-2.5 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
                 >
                   Join Group
                 </button>
@@ -1022,7 +1088,7 @@ export default function ExpenseSplitApp() {
                     setShowJoinLinkModal(false);
                     setJoinGroupId('');
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition font-semibold"
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 sm:py-2.5 rounded-lg hover:bg-gray-400 transition font-semibold text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -1093,27 +1159,26 @@ export default function ExpenseSplitApp() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-xl font-bold mb-4">Group Balances</h2>
+            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Group Balances</h2>
               {Object.keys(balances).length === 0 ? (
-                <p className="text-gray-500">All settled up!</p>
+                <p className="text-sm sm:text-base text-gray-500">All settled up!</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {Object.entries(balances).map(([key, amount]) => {
                     const [fromId, toId] = key.split('-');
                     return (
-                      <div key={key} className="p-3 bg-gray-50 rounded">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">
+                      <div key={key} className="p-2.5 sm:p-3 bg-gray-50 rounded">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                          <span className="text-xs sm:text-sm">
                             {getUserName(fromId)} owes {getUserName(toId)}
                           </span>
-                          <span className="font-bold text-teal-600">${amount.toFixed(2)}</span>
+                          <span className="font-bold text-teal-600 text-sm sm:text-base">${amount.toFixed(2)}</span>
                         </div>
                         {fromId === currentUser?.id && (
                           <button
                             onClick={() => handleSettleUp(fromId, toId, amount)}
-                            className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                          >
+                            className="text-xs sm:text-sm bg-green-500 text-white px-3 py-1 sm:py-1.5 rounded hover:bg-green-600\">
                             Settle Up
                           </button>
                         )}
@@ -1142,24 +1207,26 @@ export default function ExpenseSplitApp() {
                     
                     return (
                       <div key={expense.id} className="p-3 border border-gray-200 rounded">
-                        <div className="flex justify-between items-start gap-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{expense.description}</h3>
-                            <p className="text-sm text-gray-600">
-                              Paid by {getUserName(expense.paidBy)}
-                            </p>
+                        <div className="flex justify-between items-start gap-2 sm:gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold truncate">{expense.description}</h3>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-gray-600">
+                              <span>Paid by {getUserName(expense.paidBy)}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="text-xs sm:text-sm text-gray-500">{formatDateTime(expense.createdAt)}</span>
+                            </div>
                             
                             {/* Show user's share and total */}
-                            <div className="mt-2 space-y-1">
+                            <div className="mt-1.5 sm:mt-2 space-y-1">
                               {isPayer ? (
-                                <div className="text-sm">
+                                <div className="text-xs sm:text-sm">
                                   <span className="text-green-600 font-medium">You paid: ${expense.amount.toFixed(2)}</span>
                                   {expense.participants.length > 1 && (
                                     <span className="text-gray-600"> (Your share: ${userShare.toFixed(2)})</span>
                                   )}
                                 </div>
                               ) : (
-                                <div className="text-sm">
+                                <div className="text-xs sm:text-sm">
                                   <span className="text-orange-600 font-medium">Your share: ${userShare.toFixed(2)}</span>
                                   <span className="text-gray-600"> of ${expense.amount.toFixed(2)}</span>
                                 </div>
@@ -1169,22 +1236,24 @@ export default function ExpenseSplitApp() {
                             {expense.splitAmounts && (
                               <div className="mt-1 text-xs text-gray-500">
                                 <span className="font-medium">Custom split:</span>
-                                {expense.participants.map((pId, idx) => (
-                                  <span key={pId}>
-                                    {idx > 0 && ', '}
-                                    {getUserName(pId)}: ${expense.splitAmounts![pId].toFixed(2)}
-                                  </span>
-                                ))}
+                                <span className="block sm:inline">
+                                  {expense.participants.map((pId, idx) => (
+                                    <span key={pId}>
+                                      {idx > 0 && ', '}
+                                      {getUserName(pId)}: ${expense.splitAmounts![pId].toFixed(2)}
+                                    </span>
+                                  ))}
+                                </span>
                               </div>
                             )}
                           </div>
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 self-start">
                             <button
                               onClick={() => deleteExpense(expense.id)}
                               className="p-1 hover:bg-red-100 rounded"
                               title="Delete expense"
                             >
-                              <Trash2 className="w-4 h-4 text-red-500" />
+                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
                             </button>
                           </div>
                         </div>
@@ -1213,8 +1282,8 @@ export default function ExpenseSplitApp() {
           </div>
         </nav>
 
-        <div className="max-w-4xl mx-auto p-4 sm:p-6">
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Group Name</label>
@@ -1222,8 +1291,8 @@ export default function ExpenseSplitApp() {
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder="e.g., Roommates, Trip to Paris, Weekend Getaway"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder="e.g., Roommates, Trip to Paris"
                 />
               </div>
 
@@ -1234,7 +1303,7 @@ export default function ExpenseSplitApp() {
                 {friends.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs text-gray-600 mb-2">Quick add from your friends:</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {friends.map(friend => {
                         const isAdded = groupMembers.includes(friend.id);
                         return (
@@ -1247,7 +1316,7 @@ export default function ExpenseSplitApp() {
                                 setGroupMembers([...groupMembers, friend.id]);
                               }
                             }}
-                            className={`px-3 py-1 rounded-full text-sm transition ${
+                            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm transition ${
                               isAdded
                                 ? 'bg-teal-100 text-teal-700 border-2 border-teal-500'
                                 : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
@@ -1263,31 +1332,31 @@ export default function ExpenseSplitApp() {
                 
                 {/* Add by email */}
                 <p className="text-xs text-gray-600 mb-2">Add new members by email:</p>
-                <div className="flex gap-2 mb-2">
+                <div className="flex flex-col sm:flex-row gap-2 mb-2">
                   <input
                     type="email"
                     value={tempMemberEmail}
                     onChange={(e) => setTempMemberEmail(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addMemberToGroup()}
                     placeholder="friend@example.com"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                   />
                   <button
                     onClick={addMemberToGroup}
-                    className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600"
+                    className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 text-sm sm:text-base whitespace-nowrap"
                   >
                     Add
                   </button>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {groupMembers.map(memberId => {
                     const member = memberCache[memberId] || friends.find(f => f.id === memberId);
                     return (
-                      <div key={memberId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <span>{member?.name || 'Unknown'}</span>
+                      <div key={memberId} className="flex justify-between items-center p-2 sm:p-2.5 bg-gray-50 rounded">
+                        <span className="text-sm sm:text-base truncate mr-2">{member?.name || 'Unknown'}</span>
                         <button
                           onClick={() => setGroupMembers(groupMembers.filter(id => id !== memberId))}
-                          className="text-red-500 text-sm"
+                          className="text-red-500 text-xs sm:text-sm font-medium hover:text-red-700 flex-shrink-0"
                         >
                           Remove
                         </button>
@@ -1299,13 +1368,58 @@ export default function ExpenseSplitApp() {
 
               <button
                 onClick={handleAddGroup}
-                className="w-full bg-teal-500 text-white py-3 rounded-lg hover:bg-teal-600 transition font-semibold"
+                className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
               >
                 Create Group
               </button>
             </div>
           </div>
         </div>
+        
+        {/* Group Created Success Modal */}
+        {showGroupCreatedModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md">
+              <div className="text-center mb-4">
+                <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Group Created!</h2>
+                <p className="text-sm sm:text-base text-gray-600">Share this group with others to start splitting expenses</p>
+              </div>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => copyGroupLink(createdGroupId)}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-blue-600 transition font-semibold text-sm sm:text-base"
+                >
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Share Group Link
+                </button>
+                
+                <button
+                  onClick={() => copyGroupId(createdGroupId)}
+                  className="w-full flex items-center justify-center gap-2 bg-gray-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-gray-600 transition font-semibold text-sm sm:text-base"
+                >
+                  <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Copy Group ID
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowGroupCreatedModal(false);
+                    setView('dashboard');
+                  }}
+                  className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1323,45 +1437,45 @@ export default function ExpenseSplitApp() {
           </div>
         </nav>
 
-        <div className="max-w-4xl mx-auto p-4 sm:p-6">
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+            <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs sm:text-sm text-blue-800">
                 💡 Add friends here to quickly include them when creating groups. You can also add people directly by email when creating a group.
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Add Friend by Email</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Add Friend by Email</label>
                 <input
                   type="email"
                   value={friendEmail}
                   onChange={(e) => setFriendEmail(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddFriend()}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                   placeholder="friend@example.com"
                 />
               </div>
 
               <button
                 onClick={handleAddFriend}
-                className="w-full bg-teal-500 text-white py-3 rounded-lg hover:bg-teal-600 transition font-semibold"
+                className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
               >
                 Add Friend
               </button>
             </div>
 
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3">Your Friends</h3>
+            <div className="mt-4 sm:mt-6">
+              <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Your Friends</h3>
               {friends.length === 0 ? (
-                <p className="text-gray-500">No friends added yet.</p>
+                <p className="text-sm sm:text-base text-gray-500">No friends added yet.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {friends.map(friend => (
-                    <div key={friend.id} className="p-3 border border-gray-200 rounded">
-                      <p className="font-medium">{friend.name}</p>
-                      <p className="text-sm text-gray-600">{friend.email}</p>
+                    <div key={friend.id} className="p-2.5 sm:p-3 border border-gray-200 rounded">
+                      <p className="font-medium text-sm sm:text-base truncate">{friend.name}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">{friend.email}</p>
                     </div>
                   ))}
                 </div>
@@ -1430,36 +1544,36 @@ export default function ExpenseSplitApp() {
               </div>
             )}
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Description</label>
                 <input
                   type="text"
                   value={expenseDesc}
                   onChange={(e) => setExpenseDesc(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                   placeholder="e.g., Dinner at restaurant"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Amount ($)</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Amount ($)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={expenseAmount}
                   onChange={(e) => setExpenseAmount(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                   placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Paid By</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Paid By</label>
                 <select
                   value={selectedPayer}
                   onChange={(e) => setSelectedPayer(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="">Select payer</option>
                   {availableMembers.map(member => (
@@ -1471,24 +1585,24 @@ export default function ExpenseSplitApp() {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium">Split Between</label>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium">Split Between</label>
                   <button
                     onClick={handleSelectAll}
-                    className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                    className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium self-start"
                   >
                     {allSelected ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
                 
                 {/* Split Mode Toggle */}
-                <div className="mb-3 flex gap-2 p-1 bg-gray-100 rounded-lg">
+                <div className="mb-2 sm:mb-3 flex gap-1.5 sm:gap-2 p-1 bg-gray-100 rounded-lg">
                   <button
                     onClick={() => {
                       setSplitMode('equal');
                       setCustomSplits({});
                     }}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                    className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition ${
                       splitMode === 'equal'
                         ? 'bg-white text-teal-600 shadow'
                         : 'text-gray-600 hover:text-gray-800'
@@ -1498,7 +1612,7 @@ export default function ExpenseSplitApp() {
                   </button>
                   <button
                     onClick={() => setSplitMode('unequal')}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                    className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition ${
                       splitMode === 'unequal'
                         ? 'bg-white text-teal-600 shadow'
                         : 'text-gray-600 hover:text-gray-800'
@@ -1508,13 +1622,13 @@ export default function ExpenseSplitApp() {
                   </button>
                 </div>
                 
-                <div className="space-y-2 border border-gray-300 rounded-lg p-3 max-h-96 overflow-y-auto">
+                <div className="space-y-1.5 sm:space-y-2 border border-gray-300 rounded-lg p-2 sm:p-3 max-h-80 sm:max-h-96 overflow-y-auto">
                   {availableMembers.length === 0 ? (
-                    <p className="text-sm text-gray-500">No members available</p>
+                    <p className="text-xs sm:text-sm text-gray-500">No members available</p>
                   ) : (
                     availableMembers.map(member => (
-                      <div key={member.id} className="border-b border-gray-100 last:border-0 pb-2 last:pb-0">
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <div key={member.id} className="border-b border-gray-100 last:border-0 pb-1.5 sm:pb-2 last:pb-0">
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded">
                           <input
                             type="checkbox"
                             checked={selectedParticipants.includes(member.id)}
@@ -1541,9 +1655,9 @@ export default function ExpenseSplitApp() {
                                 }
                               }
                             }}
-                            className="w-4 h-4 text-teal-600"
+                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-600 flex-shrink-0"
                           />
-                          <span className="flex-1">
+                          <span className="flex-1 text-xs sm:text-sm truncate">
                             {member.id === currentUser?.id ? 'You' : (member.name || member.email || 'Loading...')}
                           </span>
                           
@@ -1558,7 +1672,7 @@ export default function ExpenseSplitApp() {
                                 [member.id]: e.target.value
                               })}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
+                              className="w-20 sm:w-24 px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
                               placeholder="$0.00"
                             />
                           )}
@@ -1569,7 +1683,7 @@ export default function ExpenseSplitApp() {
                 </div>
                 
                 {selectedParticipants.length > 0 && expenseAmount && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                  <div className="mt-2 p-2 sm:p-2.5 bg-gray-50 rounded text-xs sm:text-sm">
                     {splitMode === 'equal' ? (
                       <p className="text-gray-600">
                         Each person pays: <span className="font-semibold text-gray-800">
@@ -1609,7 +1723,7 @@ export default function ExpenseSplitApp() {
               <button
                 onClick={handleAddExpense}
                 disabled={selectedParticipants.length === 0}
-                className="w-full bg-teal-500 text-white py-3 rounded-lg hover:bg-teal-600 transition font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Add Expense
               </button>
@@ -1625,31 +1739,31 @@ export default function ExpenseSplitApp() {
     if (notifications.length === 0) return null;
 
     return (
-      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      <div className="fixed top-2 sm:top-4 right-2 sm:right-4 z-50 space-y-1.5 sm:space-y-2 w-[calc(100vw-1rem)] sm:w-auto max-w-sm">
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className="bg-white rounded-lg shadow-lg p-4 flex items-start gap-3 animate-slide-in border-l-4 border-teal-500"
+            className="bg-white rounded-lg shadow-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3 animate-slide-in border-l-4 border-teal-500"
           >
             <div className="flex-shrink-0">
               {notification.type === 'expense' && (
-                <DollarSign className="w-5 h-5 text-teal-500" />
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-teal-500" />
               )}
               {notification.type === 'settlement' && (
-                <ArrowLeftRight className="w-5 h-5 text-green-500" />
+                <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
               )}
               {notification.type === 'group' && (
-                <Users className="w-5 h-5 text-blue-500" />
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-800 break-words">{notification.message}</p>
+              <p className="text-xs sm:text-sm text-gray-800 break-words">{notification.message}</p>
             </div>
             <button
               onClick={() => removeNotification(notification.id)}
               className="flex-shrink-0 text-gray-400 hover:text-gray-600"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         ))}
