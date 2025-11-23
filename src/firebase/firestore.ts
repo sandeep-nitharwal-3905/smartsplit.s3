@@ -100,6 +100,10 @@ export const createExpense = async (expenseData: any) => {
   });
 };
 
+export const updateExpense = async (expenseId: string, expenseData: any) => {
+  return await updateDoc(doc(db, COLLECTIONS.EXPENSES, expenseId), expenseData);
+};
+
 export const getGroupExpenses = async (groupId: string | null) => {
   const q = groupId
     ? query(collection(db, COLLECTIONS.EXPENSES), where('groupId', '==', groupId))

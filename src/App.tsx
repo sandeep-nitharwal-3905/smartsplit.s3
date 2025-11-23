@@ -5,6 +5,7 @@ import {
   createGroup as createFirebaseGroup, 
   getUserGroups, 
   createExpense as createFirebaseExpense,
+  updateExpense as updateFirebaseExpense,
   getGroupExpenses,
   getUserExpenses,
   deleteExpense as deleteFirebaseExpense,
@@ -105,6 +106,10 @@ export default function ExpenseSplitApp() {
   // Notification states
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [previousExpenses, setPreviousExpenses] = useState<Expense[]>([]);
+
+  // Edit expense states
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Listen to auth state changes
   useEffect(() => {
@@ -588,22 +593,50 @@ export default function ExpenseSplitApp() {
     }
     
     try {
-      const newExpense: any = {
-        description: expenseDesc,
-        amount: parseFloat(expenseAmount),
-        paidBy: selectedPayer,
-        participants: selectedParticipants,
-        groupId: selectedGroup?.id || null,
-        createdAt: new Date().toISOString(),
-        createdBy: currentUser.id
-      };
-      
-      if (splitAmounts) {
-        newExpense.splitAmounts = splitAmounts;
+      if (isEditMode && editingExpense) {
+        // Update existing expense
+        const updatedExpenseData: any = {
+          description: expenseDesc,
+          amount: parseFloat(expenseAmount),
+          paidBy: selectedPayer,
+          participants: selectedParticipants,
+        };
+        
+        if (splitAmounts) {
+          updatedExpenseData.splitAmounts = splitAmounts;
+        } else {
+          updatedExpenseData.splitAmounts = null;
+        }
+        
+        await updateFirebaseExpense(editingExpense.id, updatedExpenseData);
+        
+        setExpenses(expenses.map(e => 
+          e.id === editingExpense.id 
+            ? { ...e, ...updatedExpenseData }
+            : e
+        ));
+        
+        setIsEditMode(false);
+        setEditingExpense(null);
+      } else {
+        // Create new expense
+        const newExpense: any = {
+          description: expenseDesc,
+          amount: parseFloat(expenseAmount),
+          paidBy: selectedPayer,
+          participants: selectedParticipants,
+          groupId: selectedGroup?.id || null,
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.id
+        };
+        
+        if (splitAmounts) {
+          newExpense.splitAmounts = splitAmounts;
+        }
+        
+        const docRef = await createFirebaseExpense(newExpense);
+        setExpenses([...expenses, { id: docRef.id, ...newExpense }]);
       }
-      
-      const docRef = await createFirebaseExpense(newExpense);
-      setExpenses([...expenses, { id: docRef.id, ...newExpense }]);
       
       setExpenseDesc('');
       setExpenseAmount('');
@@ -613,8 +646,8 @@ export default function ExpenseSplitApp() {
       setCustomSplits({});
       setView(selectedGroup ? 'groupDetail' : 'dashboard');
     } catch (error) {
-      console.error('Error adding expense:', error);
-      alert('Failed to add expense');
+      console.error('Error saving expense:', error);
+      alert('Failed to save expense');
     }
   };
 
@@ -739,6 +772,41 @@ export default function ExpenseSplitApp() {
       console.error('Error deleting expense:', error);
       alert('Failed to delete expense');
     }
+  };
+
+  const startEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setIsEditMode(true);
+    setExpenseDesc(expense.description);
+    setExpenseAmount(expense.amount.toString());
+    setSelectedPayer(expense.paidBy);
+    setSelectedParticipants(expense.participants);
+    
+    if (expense.splitAmounts) {
+      setSplitMode('unequal');
+      const splits: Record<string, string> = {};
+      Object.entries(expense.splitAmounts).forEach(([id, amount]) => {
+        splits[id] = amount.toString();
+      });
+      setCustomSplits(splits);
+    } else {
+      setSplitMode('equal');
+      setCustomSplits({});
+    }
+    
+    setView('addExpense');
+  };
+
+  const cancelEditExpense = () => {
+    setEditingExpense(null);
+    setIsEditMode(false);
+    setExpenseDesc('');
+    setExpenseAmount('');
+    setSelectedPayer('');
+    setSelectedParticipants([]);
+    setSplitMode('equal');
+    setCustomSplits({});
+    setView(selectedGroup ? 'groupDetail' : 'dashboard');
   };
 
   const handleDeleteGroup = async (groupId: string) => {
@@ -1247,7 +1315,16 @@ export default function ExpenseSplitApp() {
                               </div>
                             )}
                           </div>
-                          <div className="flex-shrink-0 self-start">
+                          <div className="flex flex-col gap-1 flex-shrink-0 self-start">
+                            <button
+                              onClick={() => startEditExpense(expense)}
+                              className="p-1 hover:bg-blue-100 rounded"
+                              title="Edit expense"
+                            >
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
                             <button
                               onClick={() => deleteExpense(expense.id)}
                               className="p-1 hover:bg-red-100 rounded"
@@ -1525,12 +1602,12 @@ export default function ExpenseSplitApp() {
         <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
           <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
             <button 
-              onClick={() => setView(selectedGroup ? 'groupDetail' : 'dashboard')} 
+              onClick={() => isEditMode ? cancelEditExpense() : setView(selectedGroup ? 'groupDetail' : 'dashboard')} 
               className="hover:bg-teal-600 p-2 rounded"
             >
               ← Back
             </button>
-            <h1 className="text-lg sm:text-2xl font-bold">Add Expense</h1>
+            <h1 className="text-lg sm:text-2xl font-bold">{isEditMode ? 'Edit Expense' : 'Add Expense'}</h1>
           </div>
         </nav>
 
@@ -1725,8 +1802,17 @@ export default function ExpenseSplitApp() {
                 disabled={selectedParticipants.length === 0}
                 className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                Add Expense
+                {isEditMode ? 'Update Expense' : 'Add Expense'}
               </button>
+              
+              {isEditMode && (
+                <button
+                  onClick={cancelEditExpense}
+                  className="w-full bg-gray-300 text-gray-700 py-2.5 sm:py-3 rounded-lg hover:bg-gray-400 transition font-semibold text-sm sm:text-base"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </div>
         </div>
