@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, DollarSign, LogOut, Trash2, User, ArrowLeftRight, Share2, Copy, Link as LinkIcon, X } from 'lucide-react';
+import { Users, Plus, IndianRupee, LogOut, Trash2, User, ArrowLeftRight, Share2, Copy, Link as LinkIcon, X } from 'lucide-react';
 import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, sendVerificationEmail } from './firebase/auth';
 import { 
   createGroup as createFirebaseGroup, 
@@ -182,8 +182,8 @@ export default function ExpenseSplitApp() {
             const payerName = getUserName(expense.paidBy);
             const isSettlement = expense.description === 'Settlement';
             const message = isSettlement
-              ? `${payerName} settled up $${expense.amount.toFixed(2)}`
-              : `${payerName} added "${expense.description}" - $${expense.amount.toFixed(2)}`;
+              ? `${payerName} settled up ₹${expense.amount.toFixed(2)}`
+              : `${payerName} added "${expense.description}" - ₹${expense.amount.toFixed(2)}`;
             
             addNotification(message, isSettlement ? 'settlement' : 'expense');
           });
@@ -514,24 +514,6 @@ export default function ExpenseSplitApp() {
     }
   };
 
-  const addMemberToGroup = async () => {
-    if (!tempMemberEmail || !currentUser) return;
-    
-    try {
-      const user = await getUserByEmail(tempMemberEmail);
-      if (user && user.id !== currentUser.id && !groupMembers.includes(user.id)) {
-        setGroupMembers([...groupMembers, user.id]);
-        setMemberCache({ ...memberCache, [user.id]: user as User });
-        setTempMemberEmail('');
-      } else {
-        alert('User not found or already added');
-      }
-    } catch (error) {
-      console.error('Error finding user:', error);
-      alert('User not found');
-    }
-  };
-
   const handleAddFriend = async () => {
     if (!friendEmail) {
       alert('Please enter friend email');
@@ -542,26 +524,32 @@ export default function ExpenseSplitApp() {
     
     try {
       const friend = await getUserByEmail(friendEmail);
-      if (friend && friend.id !== currentUser.id) {
-        // Check if already a friend
-        if (friends.find(f => f.id === friend.id)) {
-          alert('This user is already your friend');
-          return;
-        }
-        
-        // Add to Firestore
-        await addFirebaseFriend(currentUser.id, friend.id);
-        
-        setFriends([...friends, friend as User]);
-        setFriendEmail('');
-        setView('dashboard');
-        alert('Friend added successfully!');
-      } else {
-        alert('Friend not found or invalid email.');
+      if (!friend) {
+        alert('User not found with this email.');
+        return;
       }
+      
+      if (friend.id === currentUser.id) {
+        alert('You cannot add yourself as a friend.');
+        return;
+      }
+      
+      // Check if already a friend
+      if (friends.find(f => f.id === friend.id)) {
+        alert('This user is already your friend');
+        return;
+      }
+      
+      // Add to Firestore
+      await addFirebaseFriend(currentUser.id, friend.id);
+      
+      setFriends([...friends, friend as User]);
+      setFriendEmail('');
+      setView('dashboard');
+      alert('Friend added successfully!');
     } catch (error) {
       console.error('Error finding friend:', error);
-      alert('Friend not found');
+      alert('Failed to add friend. Please try again.');
     }
   };
 
@@ -591,7 +579,7 @@ export default function ExpenseSplitApp() {
       
       // Allow small rounding differences (0.01)
       if (Math.abs(totalSplit - parseFloat(expenseAmount)) > 0.01) {
-        alert(`Split amounts ($${totalSplit.toFixed(2)}) must equal total expense ($${expenseAmount})`);
+        alert(`Split amounts (₹${totalSplit.toFixed(2)}) must equal total expense (₹${expenseAmount})`);
         return;
       }
     }
@@ -700,14 +688,20 @@ export default function ExpenseSplitApp() {
 
   const getUserName = (userId: string) => {
     if (userId === currentUser?.id) return 'You';
+    
     // Check in friends first
     const friend = friends.find(u => u.id === userId);
-    if (friend) return friend.name;
+    if (friend && friend.name) return friend.name;
+    
     // Check in memberCache (for group members)
     const cachedMember = memberCache[userId];
-    if (cachedMember) return cachedMember.name;
-    // Return Unknown as fallback
-    return 'Unknown';
+    if (cachedMember && cachedMember.name) return cachedMember.name;
+    
+    // Return email if available, otherwise Unknown
+    if (friend?.email) return friend.email.split('@')[0];
+    if (cachedMember?.email) return cachedMember.email.split('@')[0];
+    
+    return 'Unknown User';
   };
 
   const formatDateTime = (dateInput: any) => {
@@ -922,7 +916,7 @@ export default function ExpenseSplitApp() {
       <div className="min-h-screen bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-2xl p-4 sm:p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <DollarSign className="w-16 h-16 mx-auto text-teal-500 mb-2" />
+            <IndianRupee className="w-16 h-16 mx-auto text-teal-500 mb-2" />
             <h1 className="text-3xl font-bold text-gray-800">SmartSplit</h1>
             <p className="text-gray-600">Split expenses with friends</p>
           </div>
@@ -1363,15 +1357,15 @@ export default function ExpenseSplitApp() {
                             <div className="mt-1.5 sm:mt-2 space-y-1">
                               {isPayer ? (
                                 <div className="text-xs sm:text-sm">
-                                  <span className="text-green-600 font-medium">You paid: ${expense.amount.toFixed(2)}</span>
+                                  <span className="text-green-600 font-medium">You paid: ₹{expense.amount.toFixed(2)}</span>
                                   {expense.participants.length > 1 && (
-                                    <span className="text-gray-600"> (Your share: ${userShare.toFixed(2)})</span>
+                                    <span className="text-gray-600"> (Your share: ₹{userShare.toFixed(2)})</span>
                                   )}
                                 </div>
                               ) : (
                                 <div className="text-xs sm:text-sm">
-                                  <span className="text-orange-600 font-medium">Your share: ${userShare.toFixed(2)}</span>
-                                  <span className="text-gray-600"> of ${expense.amount.toFixed(2)}</span>
+                                  <span className="text-orange-600 font-medium">Your share: ₹{userShare.toFixed(2)}</span>
+                                  <span className="text-gray-600"> of ₹{expense.amount.toFixed(2)}</span>
                                 </div>
                               )}
                             </div>
@@ -1383,7 +1377,7 @@ export default function ExpenseSplitApp() {
                                   {expense.participants.map((pId, idx) => (
                                     <span key={pId}>
                                       {idx > 0 && ', '}
-                                      {getUserName(pId)}: ${expense.splitAmounts![pId].toFixed(2)}
+                                      {getUserName(pId)}: ₹{expense.splitAmounts![pId].toFixed(2)}
                                     </span>
                                   ))}
                                 </span>
@@ -1609,16 +1603,37 @@ export default function ExpenseSplitApp() {
                   onChange={(e) => setTempMemberEmail(e.target.value)}
                   onKeyPress={async (e) => {
                     if (e.key === 'Enter') {
-                      await addMemberToGroup();
-                      if (selectedGroup && tempMemberEmail) {
+                      e.preventDefault();
+                      if (!tempMemberEmail || !currentUser) return;
+                      try {
                         const user = await getUserByEmail(tempMemberEmail);
-                        if (user && !selectedGroup.members.includes(user.id)) {
-                          const updatedMembers = [...selectedGroup.members, user.id];
-                          await updateGroup(selectedGroup.id, { members: updatedMembers });
-                          setSelectedGroup({ ...selectedGroup, members: updatedMembers });
-                          setGroups(groups.map(g => g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g));
-                          setTempMemberEmail('');
+                        if (!user) {
+                          alert('User not found');
+                          return;
                         }
+                        if (user.id === currentUser.id) {
+                          alert('You cannot add yourself');
+                          return;
+                        }
+                        if (selectedGroup.members.includes(user.id)) {
+                          alert('User is already in the group');
+                          return;
+                        }
+                        const updatedMembers = [...selectedGroup.members, user.id];
+                        await updateGroup(selectedGroup.id, { members: updatedMembers });
+                        
+                        // Update member cache first
+                        setMemberCache({ ...memberCache, [user.id]: user as User });
+                        
+                        // Then update group states
+                        const updatedGroup = { ...selectedGroup, members: updatedMembers };
+                        setSelectedGroup(updatedGroup);
+                        setGroups(groups.map(g => g.id === selectedGroup.id ? updatedGroup : g));
+                        setTempMemberEmail('');
+                        alert('Member added successfully!');
+                      } catch (error) {
+                        console.error('Error adding member:', error);
+                        alert('Failed to add member. Please try again.');
                       }
                     }
                   }}
@@ -1627,22 +1642,36 @@ export default function ExpenseSplitApp() {
                 />
                 <button
                   onClick={async () => {
-                    if (!tempMemberEmail) return;
+                    if (!tempMemberEmail || !currentUser) return;
                     try {
                       const user = await getUserByEmail(tempMemberEmail);
-                      if (user && !selectedGroup.members.includes(user.id)) {
-                        const updatedMembers = [...selectedGroup.members, user.id];
-                        await updateGroup(selectedGroup.id, { members: updatedMembers });
-                        setSelectedGroup({ ...selectedGroup, members: updatedMembers });
-                        setGroups(groups.map(g => g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g));
-                        setMemberCache({ ...memberCache, [user.id]: user as User });
-                        setTempMemberEmail('');
-                        alert('Member added successfully!');
-                      } else {
-                        alert('User not found or already in group');
+                      if (!user) {
+                        alert('User not found');
+                        return;
                       }
+                      if (user.id === currentUser.id) {
+                        alert('You cannot add yourself');
+                        return;
+                      }
+                      if (selectedGroup.members.includes(user.id)) {
+                        alert('User is already in the group');
+                        return;
+                      }
+                      const updatedMembers = [...selectedGroup.members, user.id];
+                      await updateGroup(selectedGroup.id, { members: updatedMembers });
+                      
+                      // Update member cache first
+                      setMemberCache({ ...memberCache, [user.id]: user as User });
+                      
+                      // Then update group states
+                      const updatedGroup = { ...selectedGroup, members: updatedMembers };
+                      setSelectedGroup(updatedGroup);
+                      setGroups(groups.map(g => g.id === selectedGroup.id ? updatedGroup : g));
+                      setTempMemberEmail('');
+                      alert('Member added successfully!');
                     } catch (error) {
-                      alert('Failed to add member');
+                      console.error('Error adding member:', error);
+                      alert('Failed to add member. Please try again.');
                     }
                   }}
                   className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 text-sm sm:text-base whitespace-nowrap"
@@ -1657,14 +1686,22 @@ export default function ExpenseSplitApp() {
               <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Current Members ({selectedGroup.members.length})</h3>
               <div className="space-y-1.5 sm:space-y-2">
                 {selectedGroup.members.map(memberId => {
-                  const member = memberCache[memberId] || friends.find(f => f.id === memberId) || { id: memberId, name: 'Loading...', email: '' };
+                  let member: User;
+                  if (memberId === currentUser?.id && currentUser) {
+                    member = currentUser;
+                  } else {
+                    const friend = friends.find(f => f.id === memberId);
+                    const cached = memberCache[memberId];
+                    member = friend || cached || { id: memberId, name: '', email: '', createdAt: '' };
+                  }
                   const isCreator = memberId === selectedGroup.createdBy;
                   const isCurrentUser = memberId === currentUser?.id;
+                  const displayName = isCurrentUser ? currentUser.name : (member.name || (member.email ? member.email.split('@')[0] : 'Unknown User'));
                   return (
                     <div key={memberId} className="flex justify-between items-center p-2.5 sm:p-3 bg-gray-50 rounded">
                       <div>
                         <p className="font-medium text-sm sm:text-base truncate">
-                          {member.name || 'Unknown'} {isCurrentUser && '(You)'} {isCreator && '👑'}
+                          {displayName} {isCurrentUser && '(You)'} {isCreator && '👑'}
                         </p>
                         <p className="text-xs text-gray-500 truncate">{member.email}</p>
                       </div>
@@ -1768,9 +1805,13 @@ export default function ExpenseSplitApp() {
         if (memberId === currentUser?.id && currentUser) {
           return currentUser;
         }
-        return memberCache[memberId] || friends.find(f => f.id === memberId) || {
+        const friend = friends.find(f => f.id === memberId);
+        if (friend) return friend;
+        const cached = memberCache[memberId];
+        if (cached) return cached;
+        return {
           id: memberId,
-          name: 'Loading...',
+          name: '',
           email: '',
           createdAt: ''
         };
@@ -1827,14 +1868,14 @@ export default function ExpenseSplitApp() {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Amount ($)</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Amount (₹)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={expenseAmount}
                   onChange={(e) => setExpenseAmount(e.target.value)}
                   className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder="0.00"
+                  placeholder="₹0.00"
                 />
               </div>
 
@@ -1848,7 +1889,7 @@ export default function ExpenseSplitApp() {
                   <option value="">Select payer</option>
                   {availableMembers.map(member => (
                     <option key={member.id} value={member.id}>
-                      {member.id === currentUser?.id ? 'You' : member.name || member.email}
+                      {member.id === currentUser?.id ? 'You' : (member.name || (member.email ? member.email.split('@')[0] : 'Unknown User'))}
                     </option>
                   ))}
                 </select>
@@ -1928,7 +1969,7 @@ export default function ExpenseSplitApp() {
                             className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-600 flex-shrink-0"
                           />
                           <span className="flex-1 text-xs sm:text-sm truncate">
-                            {member.id === currentUser?.id ? 'You' : (member.name || member.email || 'Loading...')}
+                            {member.id === currentUser?.id ? 'You' : (member.name || (member.email ? member.email.split('@')[0] : 'Unknown User'))}
                           </span>
                           
                           {/* Custom amount input for unequal split */}
@@ -1943,7 +1984,7 @@ export default function ExpenseSplitApp() {
                               })}
                               onClick={(e) => e.stopPropagation()}
                               className="w-20 sm:w-24 px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
-                              placeholder="$0.00"
+                              placeholder="₹0.00"
                             />
                           )}
                         </label>
@@ -1957,7 +1998,7 @@ export default function ExpenseSplitApp() {
                     {splitMode === 'equal' ? (
                       <p className="text-gray-600">
                         Each person pays: <span className="font-semibold text-gray-800">
-                          ${(parseFloat(expenseAmount) / selectedParticipants.length).toFixed(2)}
+                          ₹{(parseFloat(expenseAmount) / selectedParticipants.length).toFixed(2)}
                         </span>
                       </p>
                     ) : (
@@ -1971,11 +2012,11 @@ export default function ExpenseSplitApp() {
                           return (
                             <>
                               <p className="text-gray-600">
-                                Total assigned: <span className="font-semibold text-gray-800">${totalSplit.toFixed(2)}</span>
+                                Total assigned: <span className="font-semibold text-gray-800">₹{totalSplit.toFixed(2)}</span>
                               </p>
                               {Math.abs(remaining) > 0.01 && (
                                 <p className={`font-semibold ${remaining > 0 ? 'text-orange-600' : 'text-red-600'}`}>
-                                  {remaining > 0 ? 'Remaining' : 'Over'}: ${Math.abs(remaining).toFixed(2)}
+                                  {remaining > 0 ? 'Remaining' : 'Over'}: ₹{Math.abs(remaining).toFixed(2)}
                                 </p>
                               )}
                               {Math.abs(remaining) <= 0.01 && (
@@ -2026,7 +2067,7 @@ export default function ExpenseSplitApp() {
           >
             <div className="flex-shrink-0">
               {notification.type === 'expense' && (
-                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-teal-500" />
+                <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5 text-teal-500" />
               )}
               {notification.type === 'settlement' && (
                 <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
