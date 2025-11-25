@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, IndianRupee, LogOut, Trash2, User, ArrowLeftRight, Share2, Copy, Link as LinkIcon, X } from 'lucide-react';
+import { Users, Plus, IndianRupee, LogOut, Trash2, User, ArrowLeftRight, Share2, Copy, Link as LinkIcon, X, Moon, Sun } from 'lucide-react';
 import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, sendVerificationEmail } from './firebase/auth';
 import { 
   createGroup as createFirebaseGroup, 
@@ -114,6 +114,27 @@ export default function ExpenseSplitApp() {
   // Edit group states
   const [isEditingGroupName, setIsEditingGroupName] = useState(false);
   const [editGroupName, setEditGroupName] = useState('');
+
+  // Theme state
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : false;
+  });
+
+  // Apply theme class to document
+  useEffect(() => {
+    if (isDarkTheme) {
+      document.documentElement.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkTheme]);
+
+  const toggleTheme = () => {
+    setIsDarkTheme(!isDarkTheme);
+  };
 
   // Listen to auth state changes
   useEffect(() => {
@@ -904,8 +925,8 @@ export default function ExpenseSplitApp() {
   // Loading screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading...</div>
+      <div className={`min-h-screen flex items-center justify-center ${isDarkTheme ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-cyan-900' : 'bg-gradient-to-br from-teal-400 to-blue-500'}`}>
+        <div className={`text-2xl font-semibold ${isDarkTheme ? 'text-cyan-400' : 'text-white'}`}>Loading...</div>
       </div>
     );
   }
@@ -913,12 +934,29 @@ export default function ExpenseSplitApp() {
   // Login/Signup View
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-2xl p-4 sm:p-8 w-full max-w-md">
+      <div className={`min-h-screen flex items-center justify-center p-4 ${isDarkTheme ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-cyan-900' : 'bg-gradient-to-br from-teal-400 to-blue-500'}`}>
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className={`fixed top-4 right-4 p-3 rounded-full shadow-lg transition-all ${
+            isDarkTheme 
+              ? 'bg-cyan-500 text-gray-900 hover:bg-cyan-400' 
+              : 'bg-white text-gray-700 hover:bg-gray-100'
+          }`}
+          title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {isDarkTheme ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+
+        <div className={`rounded-lg shadow-2xl p-4 sm:p-8 w-full max-w-md ${
+          isDarkTheme 
+            ? 'bg-gradient-to-br from-gray-900 to-gray-800 border border-cyan-500/30' 
+            : 'bg-white'
+        }`}>
           <div className="text-center mb-8">
-            <IndianRupee className="w-16 h-16 mx-auto text-teal-500 mb-2" />
-            <h1 className="text-3xl font-bold text-gray-800">SmartSplit</h1>
-            <p className="text-gray-600">Split expenses with friends</p>
+            <IndianRupee className={`w-16 h-16 mx-auto mb-2 ${isDarkTheme ? 'text-cyan-400' : 'text-teal-500'}`} />
+            <h1 className={`text-3xl font-bold ${isDarkTheme ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400' : 'text-gray-800'}`}>SmartSplit</h1>
+            <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>Split expenses with friends</p>
           </div>
           
           <div className="space-y-4">
@@ -928,7 +966,11 @@ export default function ExpenseSplitApp() {
                 placeholder="Full Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  isDarkTheme
+                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                    : 'border-gray-300 focus:ring-teal-500'
+                }`}
               />
             )}
             <input
@@ -936,7 +978,11 @@ export default function ExpenseSplitApp() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                isDarkTheme
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                  : 'border-gray-300 focus:ring-teal-500'
+              }`}
             />
             <input
               type="password"
@@ -944,12 +990,20 @@ export default function ExpenseSplitApp() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAuth()}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                isDarkTheme
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                  : 'border-gray-300 focus:ring-teal-500'
+              }`}
             />
             
             {emailVerificationSent && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+              <div className={`p-3 border rounded-lg ${
+                isDarkTheme
+                  ? 'bg-cyan-900/30 border-cyan-500/50 text-cyan-200'
+                  : 'bg-blue-50 border-blue-200 text-blue-800'
+              }`}>
+                <p className="text-sm">
                   📧 Verification email sent! Please check your inbox or spam folder and verify your email before logging in.
                 </p>
               </div>
@@ -957,23 +1011,31 @@ export default function ExpenseSplitApp() {
             
             <button
               onClick={handleAuth}
-              className="w-full bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-600 transition font-semibold"
+              className={`w-full py-2 rounded-lg transition font-semibold ${
+                isDarkTheme
+                  ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                  : 'bg-teal-500 hover:bg-teal-600 text-white'
+              }`}
             >
               {isSignUp ? 'Sign Up' : 'Log In'}
             </button>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className={`w-full border-t ${isDarkTheme ? 'border-gray-600' : 'border-gray-300'}`}></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
+                <span className={`px-2 ${isDarkTheme ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>OR</span>
               </div>
             </div>
             
             <button
               onClick={handleGoogleSignIn}
-              className="w-full bg-white text-gray-700 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold flex items-center justify-center gap-2"
+              className={`w-full py-2 px-4 border rounded-lg transition font-semibold flex items-center justify-center gap-2 ${
+                isDarkTheme
+                  ? 'bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -985,19 +1047,19 @@ export default function ExpenseSplitApp() {
             </button>
           </div>
           
-          <p className="text-center mt-4 text-gray-600">
+          <p className={`text-center mt-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-teal-500 ml-2 font-semibold hover:underline"
+              className={`ml-2 font-semibold hover:underline ${isDarkTheme ? 'text-cyan-400' : 'text-teal-500'}`}
             >
               {isSignUp ? 'Log In' : 'Sign Up'}
             </button>
           </p>
           
           {/* Footer */}
-          <div className="text-center mt-6 pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-600">
+          <div className={`text-center mt-6 pt-4 border-t ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'}`}>
+            <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
               Developed & designed with <span className="text-red-500">❤</span> by Sandeep Nitharwal
             </p>
           </div>
@@ -1009,13 +1071,26 @@ export default function ExpenseSplitApp() {
   // Dashboard View
   if (view === 'dashboard') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <nav className={`p-3 sm:p-4 shadow-lg ${
+          isDarkTheme 
+            ? 'bg-gradient-to-r from-purple-900 to-cyan-900' 
+            : 'bg-teal-500'
+        } text-white`}>
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <h1 className="text-lg sm:text-2xl font-bold">SmartSplit</h1>
             <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded transition ${
+                  isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'
+                }`}
+                title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {isDarkTheme ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+              </button>
               <span className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">Welcome, {currentUser?.name}</span>
-              <button onClick={handleLogout} className="p-2 hover:bg-teal-600 rounded">
+              <button onClick={handleLogout} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
                 <LogOut className="w-5 h-5" />
               </button>
             </div>
@@ -1027,7 +1102,11 @@ export default function ExpenseSplitApp() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
             <button
               onClick={() => setView('addGroup')}
-              className="bg-gradient-to-r from-teal-500 to-teal-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
+              className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 ${
+                isDarkTheme
+                  ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700'
+                  : 'bg-gradient-to-r from-teal-500 to-teal-600'
+              } text-white`}
             >
               <Users className="w-7 h-7" />
               <div className="text-left">
@@ -1038,7 +1117,11 @@ export default function ExpenseSplitApp() {
             
             <button
               onClick={() => setShowJoinLinkModal(true)}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
+              className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 ${
+                isDarkTheme
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
+              } text-white`}
             >
               <LinkIcon className="w-7 h-7" />
               <div className="text-left">
@@ -1050,10 +1133,20 @@ export default function ExpenseSplitApp() {
 
           {/* Info Banner for first-time users */}
           {groups.length === 0 && expenses.length === 0 && (
-            <div className="mb-4 sm:mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-              <h3 className="font-semibold text-blue-900 mb-1.5 sm:mb-2 text-sm sm:text-base">👋 Welcome to SmartSplit!</h3>
-              <p className="text-xs sm:text-sm text-blue-800 mb-1.5 sm:mb-2">Get started by creating a group or joining an existing one:</p>
-              <ul className="text-xs sm:text-sm text-blue-700 space-y-1 ml-4 list-disc">
+            <div className={`mb-4 sm:mb-6 rounded-lg p-3 sm:p-4 ${
+              isDarkTheme
+                ? 'bg-cyan-900/20 border border-cyan-500/30'
+                : 'bg-blue-50 border border-blue-200'
+            }`}>
+              <h3 className={`font-semibold mb-1.5 sm:mb-2 text-sm sm:text-base ${
+                isDarkTheme ? 'text-cyan-300' : 'text-blue-900'
+              }`}>👋 Welcome to SmartSplit!</h3>
+              <p className={`text-xs sm:text-sm mb-1.5 sm:mb-2 ${
+                isDarkTheme ? 'text-cyan-200' : 'text-blue-800'
+              }`}>Get started by creating a group or joining an existing one:</p>
+              <ul className={`text-xs sm:text-sm space-y-1 ml-4 list-disc ${
+                isDarkTheme ? 'text-cyan-100' : 'text-blue-700'
+              }`}>
                 <li><strong>Create Group:</strong> Perfect for roommates, trips, or shared expenses</li>
                 <li><strong>Join Group:</strong> Someone shared a group link with you? Join here!</li>
               </ul>
@@ -1061,15 +1154,23 @@ export default function ExpenseSplitApp() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+            <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+              isDarkTheme
+                ? 'bg-gray-800 border border-gray-700'
+                : 'bg-white'
+            }`}>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-3 sm:mb-4">
-                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <h2 className={`text-lg sm:text-xl font-bold flex items-center gap-2 ${
+                  isDarkTheme ? 'text-white' : 'text-gray-900'
+                }`}>
                   <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                   Your Groups
                 </h2>
                 <button
                   onClick={() => setView('addFriend')}
-                  className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1 self-start"
+                  className={`text-xs sm:text-sm font-medium flex items-center gap-1 self-start ${
+                    isDarkTheme ? 'text-cyan-400 hover:text-cyan-300' : 'text-teal-600 hover:text-teal-700'
+                  }`}
                   title="Manage your friends to easily add them to groups"
                 >
                   <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1077,7 +1178,9 @@ export default function ExpenseSplitApp() {
                 </button>
               </div>
               {groups.length === 0 ? (
-                <p className="text-sm sm:text-base text-gray-500">No groups yet. Create one to get started!</p>
+                <p className={`text-sm sm:text-base ${
+                  isDarkTheme ? 'text-gray-400' : 'text-gray-500'
+                }`}>No groups yet. Create one to get started!</p>
               ) : (
                 <div className="space-y-1.5 sm:space-y-2">
                   {groups.map(group => (
@@ -1087,23 +1190,39 @@ export default function ExpenseSplitApp() {
                         setSelectedGroup(group);
                         setView('groupDetail');
                       }}
-                      className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                      className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition ${
+                        isDarkTheme
+                          ? 'border-gray-600 hover:bg-gray-700 hover:border-cyan-500'
+                          : 'border-gray-200 hover:bg-gray-50'
+                      }`}
                     >
-                      <h3 className="font-semibold text-sm sm:text-base truncate">{group.name}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</p>
+                      <h3 className={`font-semibold text-sm sm:text-base truncate ${
+                        isDarkTheme ? 'text-white' : 'text-gray-900'
+                      }`}>{group.name}</h3>
+                      <p className={`text-xs sm:text-sm ${
+                        isDarkTheme ? 'text-gray-400' : 'text-gray-600'
+                      }`}>{group.members.length} member{group.members.length !== 1 ? 's' : ''}</p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
+            <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+              isDarkTheme
+                ? 'bg-gray-800 border border-gray-700'
+                : 'bg-white'
+            }`}>
+              <h2 className={`text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2 ${
+                isDarkTheme ? 'text-white' : 'text-gray-900'
+              }`}>
                 <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 Overall Balances
               </h2>
               {Object.keys(balances).length === 0 ? (
-                <p className="text-sm sm:text-base text-gray-500">All settled up!</p>
+                <p className={`text-sm sm:text-base ${
+                  isDarkTheme ? 'text-gray-400' : 'text-gray-500'
+                }`}>All settled up!</p>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
                   {Object.entries(balances).map(([key, amount]) => {
@@ -1119,7 +1238,11 @@ export default function ExpenseSplitApp() {
                         {fromId === currentUser?.id && (
                           <button
                             onClick={() => handleSettleUp(fromId, toId, amount)}
-                            className="text-xs sm:text-sm bg-green-500 text-white px-3 py-1 sm:py-1.5 rounded hover:bg-green-600"
+                            className={`text-xs sm:text-sm px-3 py-1 sm:py-1.5 rounded transition ${
+                              isDarkTheme
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-green-500 text-white hover:bg-green-600'
+                            }`}
                           >
                             Settle Up
                           </button>
@@ -1136,9 +1259,17 @@ export default function ExpenseSplitApp() {
         {/* Join Group Modal */}
         {showJoinLinkModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Join a Group</h2>
-              <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4">Enter the Group ID to join</p>
+            <div className={`rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md ${
+              isDarkTheme
+                ? 'bg-gray-800 border border-gray-700'
+                : 'bg-white'
+            }`}>
+              <h2 className={`text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 ${
+                isDarkTheme ? 'text-white' : 'text-gray-900'
+              }`}>Join a Group</h2>
+              <p className={`text-xs sm:text-sm md:text-base mb-3 sm:mb-4 ${
+                isDarkTheme ? 'text-gray-300' : 'text-gray-600'
+              }`}>Enter the Group ID to join</p>
               
               <input
                 type="text"
@@ -1146,13 +1277,21 @@ export default function ExpenseSplitApp() {
                 onChange={(e) => setJoinGroupId(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleJoinGroup()}
                 placeholder="Enter Group ID"
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 mb-3 sm:mb-4"
+                className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent mb-3 sm:mb-4 ${
+                  isDarkTheme
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                    : 'border-gray-300 focus:ring-teal-500'
+                }`}
               />
               
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={handleJoinGroup}
-                  className="flex-1 bg-teal-500 text-white py-2 sm:py-2.5 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
+                  className={`flex-1 py-2 sm:py-2.5 rounded-lg transition font-semibold text-sm sm:text-base ${
+                    isDarkTheme
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                      : 'bg-teal-500 text-white hover:bg-teal-600'
+                  }`}
                 >
                   Join Group
                 </button>
@@ -1161,7 +1300,11 @@ export default function ExpenseSplitApp() {
                     setShowJoinLinkModal(false);
                     setJoinGroupId('');
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 sm:py-2.5 rounded-lg hover:bg-gray-400 transition font-semibold text-sm sm:text-base"
+                  className={`flex-1 py-2 sm:py-2.5 rounded-lg transition font-semibold text-sm sm:text-base ${
+                    isDarkTheme
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  }`}
                 >
                   Cancel
                 </button>
@@ -1172,7 +1315,9 @@ export default function ExpenseSplitApp() {
         
         {/* Footer */}
         <footer className="mt-8 pb-6 text-center">
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className={`text-xs sm:text-sm ${
+            isDarkTheme ? 'text-gray-400' : 'text-gray-600'
+          }`}>
             Developed & designed with <span className="text-red-500">❤</span> by Sandeep Nitharwal
           </p>
         </footer>
@@ -1183,11 +1328,11 @@ export default function ExpenseSplitApp() {
   // Group Detail View
   if (view === 'groupDetail' && selectedGroup) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <nav className={`p-3 sm:p-4 shadow-lg ${isDarkTheme ? 'bg-gradient-to-r from-purple-700 to-cyan-700 text-white' : 'bg-teal-500 text-white'}`}>
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <div className="flex items-center gap-2 sm:gap-4 flex-1">
-              <button onClick={() => setView('dashboard')} className="hover:bg-teal-600 p-2 rounded">
+              <button onClick={() => setView('dashboard')} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
                 ← Back
               </button>
               {isEditingGroupName ? (
@@ -1196,7 +1341,9 @@ export default function ExpenseSplitApp() {
                     type="text"
                     value={editGroupName}
                     onChange={(e) => setEditGroupName(e.target.value)}
-                    className="flex-1 px-3 py-1 text-sm sm:text-base border border-white rounded bg-teal-600 text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white"
+                    className={`flex-1 px-3 py-1 text-sm sm:text-base border border-white rounded text-white focus:outline-none focus:ring-2 focus:ring-white ${
+                      isDarkTheme ? 'bg-cyan-600 placeholder-cyan-200' : 'bg-teal-600 placeholder-teal-200'
+                    }`}
                     placeholder="Group name"
                   />
                   <button
@@ -1208,7 +1355,7 @@ export default function ExpenseSplitApp() {
                         setIsEditingGroupName(false);
                       }
                     }}
-                    className="text-white hover:bg-teal-600 p-1 rounded text-sm"
+                    className={`text-white p-1 rounded text-sm ${isDarkTheme ? 'hover:bg-cyan-600' : 'hover:bg-teal-600'}`}
                   >
                     ✓
                   </button>
@@ -1217,7 +1364,7 @@ export default function ExpenseSplitApp() {
                       setIsEditingGroupName(false);
                       setEditGroupName(selectedGroup.name);
                     }}
-                    className="text-white hover:bg-teal-600 p-1 rounded text-sm"
+                    className={`text-white p-1 rounded text-sm ${isDarkTheme ? 'hover:bg-cyan-600' : 'hover:bg-teal-600'}`}
                   >
                     ✕
                   </button>
@@ -1230,7 +1377,7 @@ export default function ExpenseSplitApp() {
                       setEditGroupName(selectedGroup.name);
                       setIsEditingGroupName(true);
                     }}
-                    className="hover:bg-teal-600 p-1 rounded"
+                    className={`p-1 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}
                     title="Edit group name"
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1240,7 +1387,7 @@ export default function ExpenseSplitApp() {
                 </div>
               )}
             </div>
-            <button onClick={handleLogout} className="p-2 hover:bg-teal-600 rounded">
+            <button onClick={handleLogout} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -1250,7 +1397,11 @@ export default function ExpenseSplitApp() {
           <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
             <button
               onClick={() => setView('addExpense')}
-              className="flex-1 min-w-[140px] bg-teal-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-teal-600 transition font-semibold flex items-center justify-center gap-2"
+              className={`flex-1 min-w-[140px] text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition font-semibold flex items-center justify-center gap-2 ${
+                isDarkTheme
+                  ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700'
+                  : 'bg-teal-500 hover:bg-teal-600'
+              }`}
             >
               <Plus className="w-5 h-5" />
               Add Expense
@@ -1258,7 +1409,9 @@ export default function ExpenseSplitApp() {
             
             <button
               onClick={() => setView('manageGroupMembers')}
-              className="bg-purple-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-purple-600 transition font-semibold flex items-center gap-1 sm:gap-2"
+              className={`text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition font-semibold flex items-center gap-1 sm:gap-2 ${
+                isDarkTheme ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'
+              }`}
               title="Manage members"
             >
               <Users className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1267,7 +1420,9 @@ export default function ExpenseSplitApp() {
             
             <button
               onClick={() => copyGroupLink(selectedGroup.id)}
-              className="bg-blue-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-blue-600 transition font-semibold flex items-center gap-1 sm:gap-2"
+              className={`text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition font-semibold flex items-center gap-1 sm:gap-2 ${
+                isDarkTheme ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+              }`}
               title="Share group link"
             >
               <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1276,7 +1431,9 @@ export default function ExpenseSplitApp() {
             
             <button
               onClick={() => copyGroupId(selectedGroup.id)}
-              className="bg-gray-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-gray-600 transition font-semibold flex items-center gap-1 sm:gap-2"
+              className={`text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition font-semibold flex items-center gap-1 sm:gap-2 ${
+                isDarkTheme ? 'bg-gray-600 hover:bg-gray-700' : 'bg-gray-500 hover:bg-gray-600'
+              }`}
               title="Copy group ID"
             >
               <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1286,7 +1443,9 @@ export default function ExpenseSplitApp() {
             {selectedGroup.createdBy === currentUser?.id && (
               <button
                 onClick={() => handleDeleteGroup(selectedGroup.id)}
-                className="bg-red-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-red-600 transition font-semibold flex items-center gap-1 sm:gap-2"
+                className={`text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition font-semibold flex items-center gap-1 sm:gap-2 ${
+                  isDarkTheme ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'
+                }`}
                 title="Delete group"
               >
                 <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1296,26 +1455,34 @@ export default function ExpenseSplitApp() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Group Balances</h2>
+            <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+              isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}>
+              <h2 className={`text-lg sm:text-xl font-bold mb-3 sm:mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Group Balances</h2>
               {Object.keys(balances).length === 0 ? (
-                <p className="text-sm sm:text-base text-gray-500">All settled up!</p>
+                <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>All settled up!</p>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
                   {Object.entries(balances).map(([key, amount]) => {
                     const [fromId, toId] = key.split('-');
                     return (
-                      <div key={key} className="p-2.5 sm:p-3 bg-gray-50 rounded">
+                      <div key={key} className={`p-2.5 sm:p-3 rounded ${
+                        isDarkTheme ? 'bg-gray-700' : 'bg-gray-50'
+                      }`}>
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                          <span className="text-xs sm:text-sm">
+                          <span className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
                             {getUserName(fromId)} owes {getUserName(toId)}
                           </span>
-                          <span className="font-bold text-teal-600 text-sm sm:text-base">${amount.toFixed(2)}</span>
+                          <span className={`font-bold text-sm sm:text-base ${
+                            isDarkTheme ? 'text-cyan-400' : 'text-teal-600'
+                          }`}>₹{amount.toFixed(2)}</span>
                         </div>
                         {fromId === currentUser?.id && (
                           <button
                             onClick={() => handleSettleUp(fromId, toId, amount)}
-                            className="text-xs sm:text-sm bg-green-500 text-white px-3 py-1 sm:py-1.5 rounded hover:bg-green-600\">
+                            className={`text-xs sm:text-sm px-3 py-1 sm:py-1.5 rounded transition ${
+                              isDarkTheme ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-green-500 text-white hover:bg-green-600'
+                            }`}>
                             Settle Up
                           </button>
                         )}
@@ -1326,10 +1493,12 @@ export default function ExpenseSplitApp() {
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold mb-4">Recent Expenses</h2>
+            <div className={`rounded-lg shadow p-6 ${
+              isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}>
+              <h2 className={`text-xl font-bold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Recent Expenses</h2>
               {expenses.length === 0 ? (
-                <p className="text-gray-500">No expenses yet.</p>
+                <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-500'}>No expenses yet.</p>
               ) : (
                 <div className="space-y-2">
                   {expenses.map(expense => {
@@ -1343,35 +1512,39 @@ export default function ExpenseSplitApp() {
                     const isPayer = expense.paidBy === currentUser?.id;
                     
                     return (
-                      <div key={expense.id} className="p-3 border border-gray-200 rounded">
+                      <div key={expense.id} className={`p-3 border rounded ${
+                        isDarkTheme ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200'
+                      }`}>
                         <div className="flex justify-between items-start gap-2 sm:gap-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{expense.description}</h3>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-gray-600">
+                            <h3 className={`font-semibold truncate ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{expense.description}</h3>
+                            <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm ${
+                              isDarkTheme ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
                               <span>Paid by {getUserName(expense.paidBy)}</span>
                               <span className="hidden sm:inline">•</span>
-                              <span className="text-xs sm:text-sm text-gray-500">{formatDateTime(expense.createdAt)}</span>
+                              <span className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-500' : 'text-gray-500'}`}>{formatDateTime(expense.createdAt)}</span>
                             </div>
                             
                             {/* Show user's share and total */}
                             <div className="mt-1.5 sm:mt-2 space-y-1">
                               {isPayer ? (
                                 <div className="text-xs sm:text-sm">
-                                  <span className="text-green-600 font-medium">You paid: ₹{expense.amount.toFixed(2)}</span>
+                                  <span className={`font-medium ${isDarkTheme ? 'text-green-400' : 'text-green-600'}`}>You paid: ₹{expense.amount.toFixed(2)}</span>
                                   {expense.participants.length > 1 && (
-                                    <span className="text-gray-600"> (Your share: ₹{userShare.toFixed(2)})</span>
+                                    <span className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}> (Your share: ₹{userShare.toFixed(2)})</span>
                                   )}
                                 </div>
                               ) : (
                                 <div className="text-xs sm:text-sm">
-                                  <span className="text-orange-600 font-medium">Your share: ₹{userShare.toFixed(2)}</span>
-                                  <span className="text-gray-600"> of ₹{expense.amount.toFixed(2)}</span>
+                                  <span className={`font-medium ${isDarkTheme ? 'text-orange-400' : 'text-orange-600'}`}>Your share: ₹{userShare.toFixed(2)}</span>
+                                  <span className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}> of ₹{expense.amount.toFixed(2)}</span>
                                 </div>
                               )}
                             </div>
                             
                             {expense.splitAmounts && (
-                              <div className="mt-1 text-xs text-gray-500">
+                              <div className={`mt-1 text-xs ${isDarkTheme ? 'text-gray-500' : 'text-gray-500'}`}>
                                 <span className="font-medium">Custom split:</span>
                                 <span className="block sm:inline">
                                   {expense.participants.map((pId, idx) => (
@@ -1418,10 +1591,10 @@ export default function ExpenseSplitApp() {
   // Add Group View
   if (view === 'addGroup') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <nav className={`p-3 sm:p-4 shadow-lg ${isDarkTheme ? 'bg-gradient-to-r from-purple-700 to-cyan-700 text-white' : 'bg-teal-500 text-white'}`}>
           <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setView('dashboard')} className="hover:bg-teal-600 p-2 rounded">
+            <button onClick={() => setView('dashboard')} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
               ← Back
             </button>
             <h1 className="text-lg sm:text-2xl font-bold">Create New Group</h1>
@@ -1429,23 +1602,29 @@ export default function ExpenseSplitApp() {
         </nav>
 
         <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+          <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+            isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Group Name</label>
+                <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Group Name</label>
                 <input
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent ${
+                    isDarkTheme
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
                   placeholder="e.g., Roommates, Trip to Paris"
                 />
               </div>
 
               {friends.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Add Members (Optional)</label>
-                  <p className="text-xs text-gray-600 mb-2">Select friends to add to this group:</p>
+                  <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Add Members (Optional)</label>
+                  <p className={`text-xs mb-2 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Select friends to add to this group:</p>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {friends.map(friend => {
                       const isAdded = groupMembers.includes(friend.id);
@@ -1461,8 +1640,12 @@ export default function ExpenseSplitApp() {
                           }}
                           className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm transition ${
                             isAdded
-                              ? 'bg-teal-100 text-teal-700 border-2 border-teal-500'
-                              : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                              ? isDarkTheme
+                                ? 'bg-cyan-900 text-cyan-200 border-2 border-cyan-500'
+                                : 'bg-teal-100 text-teal-700 border-2 border-teal-500'
+                              : isDarkTheme
+                                ? 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:border-gray-500'
+                                : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
                           }`}
                         >
                           {isAdded && '✓ '}{friend.name || friend.email}
@@ -1474,8 +1657,10 @@ export default function ExpenseSplitApp() {
               )}
 
               {friends.length === 0 && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs sm:text-sm text-blue-800">
+                <div className={`p-3 border rounded-lg ${
+                  isDarkTheme ? 'bg-blue-900/20 border-blue-500/30' : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'}`}>
                     💡 Tip: Add friends first to quickly add them to groups. You can add members after creating the group too!
                   </p>
                 </div>
@@ -1483,7 +1668,11 @@ export default function ExpenseSplitApp() {
 
               <button
                 onClick={handleAddGroup}
-                className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
+                className={`w-full py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
+                  isDarkTheme
+                    ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                    : 'bg-teal-500 text-white hover:bg-teal-600'
+                }`}
               >
                 Create Group
               </button>
@@ -1494,21 +1683,27 @@ export default function ExpenseSplitApp() {
         {/* Group Created Success Modal */}
         {showGroupCreatedModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md">
+            <div className={`rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md ${
+              isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}>
               <div className="text-center mb-4">
-                <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`mx-auto w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-3 ${
+                  isDarkTheme ? 'bg-green-900' : 'bg-green-100'
+                }`}>
+                  <svg className={`w-6 h-6 sm:w-8 sm:h-8 ${isDarkTheme ? 'text-green-400' : 'text-green-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Group Created!</h2>
-                <p className="text-sm sm:text-base text-gray-600">Share this group with others to start splitting expenses</p>
+                <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Group Created!</h2>
+                <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>Share this group with others to start splitting expenses</p>
               </div>
               
               <div className="space-y-3">
                 <button
                   onClick={() => copyGroupLink(createdGroupId)}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-blue-600 transition font-semibold text-sm sm:text-base"
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
+                    isDarkTheme ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
                 >
                   <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   Share Group Link
@@ -1516,7 +1711,9 @@ export default function ExpenseSplitApp() {
                 
                 <button
                   onClick={() => copyGroupId(createdGroupId)}
-                  className="w-full flex items-center justify-center gap-2 bg-gray-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-gray-600 transition font-semibold text-sm sm:text-base"
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
+                    isDarkTheme ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-500 text-white hover:bg-gray-600'
+                  }`}
                 >
                   <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
                   Copy Group ID
@@ -1527,7 +1724,11 @@ export default function ExpenseSplitApp() {
                     setShowGroupCreatedModal(false);
                     setView('dashboard');
                   }}
-                  className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
+                  className={`w-full py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
+                    isDarkTheme
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                      : 'bg-teal-500 text-white hover:bg-teal-600'
+                  }`}
                 >
                   Go to Dashboard
                 </button>
@@ -1542,10 +1743,10 @@ export default function ExpenseSplitApp() {
   // Manage Group Members View
   if (view === 'manageGroupMembers' && selectedGroup) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <nav className={`p-3 sm:p-4 shadow-lg ${isDarkTheme ? 'bg-gradient-to-r from-purple-700 to-cyan-700 text-white' : 'bg-teal-500 text-white'}`}>
           <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setView('groupDetail')} className="hover:bg-teal-600 p-2 rounded">
+            <button onClick={() => setView('groupDetail')} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
               ← Back
             </button>
             <h1 className="text-lg sm:text-2xl font-bold">Manage Members</h1>
@@ -1553,9 +1754,13 @@ export default function ExpenseSplitApp() {
         </nav>
 
         <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs sm:text-sm text-blue-800">
+          <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+            isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
+            <div className={`mb-4 p-3 border rounded-lg ${
+              isDarkTheme ? 'bg-blue-900/20 border-blue-500/30' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'}`}>
                 💡 Add members to your group by selecting from your friends or adding new users by email.
               </p>
             </div>
@@ -1563,7 +1768,7 @@ export default function ExpenseSplitApp() {
             {/* Quick add from friends */}
             {friends.length > 0 && (
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Add from Friends</label>
+                <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Add from Friends</label>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {friends.map(friend => {
                     const isAdded = selectedGroup.members.includes(friend.id);
@@ -1581,8 +1786,12 @@ export default function ExpenseSplitApp() {
                         disabled={isAdded}
                         className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm transition ${
                           isAdded
-                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            : 'bg-teal-100 text-teal-700 border-2 border-teal-500 hover:bg-teal-200'
+                            ? isDarkTheme
+                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : isDarkTheme
+                              ? 'bg-cyan-900 text-cyan-200 border-2 border-cyan-500 hover:bg-cyan-800'
+                              : 'bg-teal-100 text-teal-700 border-2 border-teal-500 hover:bg-teal-200'
                         }`}
                       >
                         {isAdded ? '✓ Added' : `+ ${friend.name || friend.email}`}
@@ -1595,7 +1804,7 @@ export default function ExpenseSplitApp() {
 
             {/* Add by email */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Add by Email</label>
+              <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Add by Email</label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="email"
@@ -1638,7 +1847,11 @@ export default function ExpenseSplitApp() {
                     }
                   }}
                   placeholder="friend@example.com"
-                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className={`flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent ${
+                    isDarkTheme
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
                 />
                 <button
                   onClick={async () => {
@@ -1674,7 +1887,11 @@ export default function ExpenseSplitApp() {
                       alert('Failed to add member. Please try again.');
                     }
                   }}
-                  className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 text-sm sm:text-base whitespace-nowrap"
+                  className={`px-4 py-2 rounded-lg text-sm sm:text-base whitespace-nowrap transition ${
+                    isDarkTheme
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                      : 'bg-teal-500 text-white hover:bg-teal-600'
+                  }`}
                 >
                   Add
                 </button>
@@ -1683,7 +1900,7 @@ export default function ExpenseSplitApp() {
 
             {/* Current members */}
             <div>
-              <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Current Members ({selectedGroup.members.length})</h3>
+              <h3 className={`font-semibold mb-2 sm:mb-3 text-sm sm:text-base ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Current Members ({selectedGroup.members.length})</h3>
               <div className="space-y-1.5 sm:space-y-2">
                 {selectedGroup.members.map(memberId => {
                   let member: User;
@@ -1698,12 +1915,14 @@ export default function ExpenseSplitApp() {
                   const isCurrentUser = memberId === currentUser?.id;
                   const displayName = isCurrentUser ? currentUser.name : (member.name || (member.email ? member.email.split('@')[0] : 'Unknown User'));
                   return (
-                    <div key={memberId} className="flex justify-between items-center p-2.5 sm:p-3 bg-gray-50 rounded">
+                    <div key={memberId} className={`flex justify-between items-center p-2.5 sm:p-3 rounded ${
+                      isDarkTheme ? 'bg-gray-700' : 'bg-gray-50'
+                    }`}>
                       <div>
-                        <p className="font-medium text-sm sm:text-base truncate">
+                        <p className={`font-medium text-sm sm:text-base truncate ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
                           {displayName} {isCurrentUser && '(You)'} {isCreator && '👑'}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                        <p className={`text-xs truncate ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>{member.email}</p>
                       </div>
                       {!isCreator && selectedGroup.createdBy === currentUser?.id && (
                         <button
@@ -1734,10 +1953,10 @@ export default function ExpenseSplitApp() {
   // Add Friend View
   if (view === 'addFriend') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <nav className={`p-3 sm:p-4 shadow-lg ${isDarkTheme ? 'bg-gradient-to-r from-purple-700 to-cyan-700 text-white' : 'bg-teal-500 text-white'}`}>
           <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setView('dashboard')} className="hover:bg-teal-600 p-2 rounded">
+            <button onClick={() => setView('dashboard')} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
               ← Back
             </button>
             <h1 className="text-lg sm:text-2xl font-bold">Manage Friends</h1>
@@ -1745,44 +1964,58 @@ export default function ExpenseSplitApp() {
         </nav>
 
         <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-            <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs sm:text-sm text-blue-800">
+          <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+            isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
+            <div className={`mb-3 sm:mb-4 p-2.5 sm:p-3 border rounded-lg ${
+              isDarkTheme ? 'bg-blue-900/20 border-blue-500/30' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'}`}>
                 💡 Add friends here to quickly include them when creating groups. You can also add people directly by email when creating a group.
               </p>
             </div>
             
             <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Add Friend by Email</label>
+                <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Add Friend by Email</label>
                 <input
                   type="email"
                   value={friendEmail}
                   onChange={(e) => setFriendEmail(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddFriend()}
-                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent ${
+                    isDarkTheme
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
                   placeholder="friend@example.com"
                 />
               </div>
 
               <button
                 onClick={handleAddFriend}
-                className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base"
+                className={`w-full py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
+                  isDarkTheme
+                    ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                    : 'bg-teal-500 text-white hover:bg-teal-600'
+                }`}
               >
                 Add Friend
               </button>
             </div>
 
             <div className="mt-4 sm:mt-6">
-              <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Your Friends</h3>
+              <h3 className={`font-semibold mb-2 sm:mb-3 text-sm sm:text-base ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Your Friends</h3>
               {friends.length === 0 ? (
-                <p className="text-sm sm:text-base text-gray-500">No friends added yet.</p>
+                <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>No friends added yet.</p>
               ) : (
                 <div className="space-y-1.5 sm:space-y-2">
                   {friends.map(friend => (
-                    <div key={friend.id} className="p-2.5 sm:p-3 border border-gray-200 rounded">
-                      <p className="font-medium text-sm sm:text-base truncate">{friend.name}</p>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">{friend.email}</p>
+                    <div key={friend.id} className={`p-2.5 sm:p-3 border rounded ${
+                      isDarkTheme ? 'border-gray-600 bg-gray-700' : 'border-gray-200'
+                    }`}>
+                      <p className={`font-medium text-sm sm:text-base truncate ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{friend.name}</p>
+                      <p className={`text-xs sm:text-sm truncate ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{friend.email}</p>
                     </div>
                   ))}
                 </div>
@@ -1832,12 +2065,12 @@ export default function ExpenseSplitApp() {
     const allSelected = selectedParticipants.length === availableMembers.length && availableMembers.length > 0;
 
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-teal-500 text-white p-3 sm:p-4 shadow-lg">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <nav className={`p-3 sm:p-4 shadow-lg ${isDarkTheme ? 'bg-gradient-to-r from-purple-700 to-cyan-700 text-white' : 'bg-teal-500 text-white'}`}>
           <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
             <button 
               onClick={() => isEditMode ? cancelEditExpense() : setView(selectedGroup ? 'groupDetail' : 'dashboard')} 
-              className="hover:bg-teal-600 p-2 rounded"
+              className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}
             >
               ← Back
             </button>
@@ -1846,10 +2079,14 @@ export default function ExpenseSplitApp() {
         </nav>
 
         <div className="max-w-4xl mx-auto p-4 sm:p-6">
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className={`rounded-lg shadow p-4 sm:p-6 ${
+            isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+          }`}>
             {selectedGroup && (
-              <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
-                <p className="text-sm text-teal-800">
+              <div className={`mb-4 p-3 border rounded-lg ${
+                isDarkTheme ? 'bg-cyan-900/20 border-cyan-500/30' : 'bg-teal-50 border-teal-200'
+              }`}>
+                <p className={`text-sm ${isDarkTheme ? 'text-cyan-300' : 'text-teal-800'}`}>
                   <strong>Group:</strong> {selectedGroup.name}
                 </p>
               </div>
@@ -1857,34 +2094,46 @@ export default function ExpenseSplitApp() {
             
             <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Description</label>
+                <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Description</label>
                 <input
                   type="text"
                   value={expenseDesc}
                   onChange={(e) => setExpenseDesc(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent ${
+                    isDarkTheme
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
                   placeholder="e.g., Dinner at restaurant"
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Amount (₹)</label>
+                <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Amount (₹)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={expenseAmount}
                   onChange={(e) => setExpenseAmount(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent ${
+                    isDarkTheme
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
                   placeholder="₹0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Paid By</label>
+                <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Paid By</label>
                 <select
                   value={selectedPayer}
                   onChange={(e) => setSelectedPayer(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent ${
+                    isDarkTheme
+                      ? 'bg-gray-700 border-gray-600 text-white focus:ring-cyan-500'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
                 >
                   <option value="">Select payer</option>
                   {availableMembers.map(member => (
@@ -1897,17 +2146,21 @@ export default function ExpenseSplitApp() {
 
               <div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                  <label className="block text-xs sm:text-sm font-medium">Split Between</label>
+                  <label className={`block text-xs sm:text-sm font-medium ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>Split Between</label>
                   <button
                     onClick={handleSelectAll}
-                    className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium self-start"
+                    className={`text-xs sm:text-sm font-medium self-start ${
+                      isDarkTheme ? 'text-cyan-400 hover:text-cyan-300' : 'text-teal-600 hover:text-teal-700'
+                    }`}
                   >
                     {allSelected ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
                 
                 {/* Split Mode Toggle */}
-                <div className="mb-2 sm:mb-3 flex gap-1.5 sm:gap-2 p-1 bg-gray-100 rounded-lg">
+                <div className={`mb-2 sm:mb-3 flex gap-1.5 sm:gap-2 p-1 rounded-lg ${
+                  isDarkTheme ? 'bg-gray-700' : 'bg-gray-100'
+                }`}>
                   <button
                     onClick={() => {
                       setSplitMode('equal');
@@ -1915,8 +2168,12 @@ export default function ExpenseSplitApp() {
                     }}
                     className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition ${
                       splitMode === 'equal'
-                        ? 'bg-white text-teal-600 shadow'
-                        : 'text-gray-600 hover:text-gray-800'
+                        ? isDarkTheme
+                          ? 'bg-cyan-600 text-white shadow'
+                          : 'bg-white text-teal-600 shadow'
+                        : isDarkTheme
+                          ? 'text-gray-300 hover:text-white'
+                          : 'text-gray-600 hover:text-gray-800'
                     }`}
                   >
                     Split Equally
@@ -1925,21 +2182,31 @@ export default function ExpenseSplitApp() {
                     onClick={() => setSplitMode('unequal')}
                     className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition ${
                       splitMode === 'unequal'
-                        ? 'bg-white text-teal-600 shadow'
-                        : 'text-gray-600 hover:text-gray-800'
+                        ? isDarkTheme
+                          ? 'bg-cyan-600 text-white shadow'
+                          : 'bg-white text-teal-600 shadow'
+                        : isDarkTheme
+                          ? 'text-gray-300 hover:text-white'
+                          : 'text-gray-600 hover:text-gray-800'
                     }`}
                   >
                     Split Unequally
                   </button>
                 </div>
                 
-                <div className="space-y-1.5 sm:space-y-2 border border-gray-300 rounded-lg p-2 sm:p-3 max-h-80 sm:max-h-96 overflow-y-auto">
+                <div className={`space-y-1.5 sm:space-y-2 border rounded-lg p-2 sm:p-3 max-h-80 sm:max-h-96 overflow-y-auto ${
+                  isDarkTheme ? 'border-gray-600 bg-gray-700/50' : 'border-gray-300'
+                }`}>
                   {availableMembers.length === 0 ? (
-                    <p className="text-xs sm:text-sm text-gray-500">No members available</p>
+                    <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>No members available</p>
                   ) : (
                     availableMembers.map(member => (
-                      <div key={member.id} className="border-b border-gray-100 last:border-0 pb-1.5 sm:pb-2 last:pb-0">
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 sm:p-2 rounded">
+                      <div key={member.id} className={`border-b last:border-0 pb-1.5 sm:pb-2 last:pb-0 ${
+                        isDarkTheme ? 'border-gray-600' : 'border-gray-100'
+                      }`}>
+                        <label className={`flex items-center gap-2 cursor-pointer p-1.5 sm:p-2 rounded ${
+                          isDarkTheme ? 'hover:bg-gray-600' : 'hover:bg-gray-50'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={selectedParticipants.includes(member.id)}
@@ -1994,16 +2261,18 @@ export default function ExpenseSplitApp() {
                 </div>
                 
                 {selectedParticipants.length > 0 && expenseAmount && (
-                  <div className="mt-2 p-2 sm:p-2.5 bg-gray-50 rounded text-xs sm:text-sm">
+                  <div className={`mt-2 p-2 sm:p-2.5 rounded text-xs sm:text-sm ${
+                    isDarkTheme ? 'bg-gray-700' : 'bg-gray-50'
+                  }`}>
                     {splitMode === 'equal' ? (
-                      <p className="text-gray-600">
-                        Each person pays: <span className="font-semibold text-gray-800">
+                      <p className={isDarkTheme ? 'text-gray-300' : 'text-gray-600'}>
+                        Each person pays: <span className={`font-semibold ${isDarkTheme ? 'text-cyan-400' : 'text-gray-800'}`}>
                           ₹{(parseFloat(expenseAmount) / selectedParticipants.length).toFixed(2)}
                         </span>
                       </p>
                     ) : (
                       <div className="space-y-1">
-                        <p className="text-gray-600 font-medium">Custom split:</p>
+                        <p className={`font-medium ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>Custom split:</p>
                         {(() => {
                           const totalSplit = selectedParticipants.reduce((sum, id) => 
                             sum + parseFloat(customSplits[id] || '0'), 0
@@ -2011,16 +2280,20 @@ export default function ExpenseSplitApp() {
                           const remaining = parseFloat(expenseAmount) - totalSplit;
                           return (
                             <>
-                              <p className="text-gray-600">
-                                Total assigned: <span className="font-semibold text-gray-800">₹{totalSplit.toFixed(2)}</span>
+                              <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>
+                                Total assigned: <span className={`font-semibold ${isDarkTheme ? 'text-cyan-400' : 'text-gray-800'}`}>₹{totalSplit.toFixed(2)}</span>
                               </p>
                               {Math.abs(remaining) > 0.01 && (
-                                <p className={`font-semibold ${remaining > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                                <p className={`font-semibold ${
+                                  remaining > 0 
+                                    ? isDarkTheme ? 'text-orange-400' : 'text-orange-600'
+                                    : isDarkTheme ? 'text-red-400' : 'text-red-600'
+                                }`}>
                                   {remaining > 0 ? 'Remaining' : 'Over'}: ₹{Math.abs(remaining).toFixed(2)}
                                 </p>
                               )}
                               {Math.abs(remaining) <= 0.01 && (
-                                <p className="text-green-600 font-semibold">✓ Split matches total</p>
+                                <p className={`font-semibold ${isDarkTheme ? 'text-green-400' : 'text-green-600'}`}>✓ Split matches total</p>
                               )}
                             </>
                           );
@@ -2034,7 +2307,15 @@ export default function ExpenseSplitApp() {
               <button
                 onClick={handleAddExpense}
                 disabled={selectedParticipants.length === 0}
-                className="w-full bg-teal-500 text-white py-2.5 sm:py-3 rounded-lg hover:bg-teal-600 transition font-semibold text-sm sm:text-base disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className={`w-full py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
+                  selectedParticipants.length === 0
+                    ? isDarkTheme
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkTheme
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                      : 'bg-teal-500 text-white hover:bg-teal-600'
+                }`}
               >
                 {isEditMode ? 'Update Expense' : 'Add Expense'}
               </button>
@@ -2063,25 +2344,29 @@ export default function ExpenseSplitApp() {
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className="bg-white rounded-lg shadow-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3 animate-slide-in border-l-4 border-teal-500"
+            className={`rounded-lg shadow-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3 animate-slide-in border-l-4 ${
+              isDarkTheme
+                ? 'bg-gray-800 border-cyan-500'
+                : 'bg-white border-teal-500'
+            }`}
           >
             <div className="flex-shrink-0">
               {notification.type === 'expense' && (
-                <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5 text-teal-500" />
+                <IndianRupee className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkTheme ? 'text-cyan-400' : 'text-teal-500'}`} />
               )}
               {notification.type === 'settlement' && (
-                <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                <ArrowLeftRight className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkTheme ? 'text-green-400' : 'text-green-500'}`} />
               )}
               {notification.type === 'group' && (
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                <Users className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkTheme ? 'text-blue-400' : 'text-blue-500'}`} />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm text-gray-800 break-words">{notification.message}</p>
+              <p className={`text-xs sm:text-sm break-words ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}>{notification.message}</p>
             </div>
             <button
               onClick={() => removeNotification(notification.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+              className={`flex-shrink-0 ${isDarkTheme ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
             >
               <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
