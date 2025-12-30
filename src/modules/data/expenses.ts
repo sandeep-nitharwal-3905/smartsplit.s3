@@ -77,6 +77,66 @@ export const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
 export const updateExpense = async (expenseId: string, expenseData: Partial<Expense>) => {
   const { participants, splitAmounts, groupId, ...rest } = expenseData;
 
+  // If participants or splits are provided, sync expense_splits
+  // with the new distribution using a delete + upsert strategy
+  if (participants && participants.length > 0) {
+    // 1) Build the desired splits map
+    let effectiveSplits: Record<string, number> = {};
+    if (splitAmounts && Object.keys(splitAmounts).length > 0) {
+      effectiveSplits = splitAmounts;
+    } else if (rest.amount != null) {
+      const uniqueParticipants = Array.from(new Set(participants));
+      const perPerson = (rest.amount as number) / uniqueParticipants.length;
+      uniqueParticipants.forEach((userId) => {
+        effectiveSplits[userId] = perPerson;
+      });
+    }
+
+    const newUserIds = Object.keys(effectiveSplits);
+
+    // 2) Remove any old splits for users that are no longer in the expense
+    // (so deselected participants are cleaned up)
+    const { data: existingRows, error: existingError } = await supabase
+      .from('expense_splits')
+      .select('user_id')
+      .eq('expense_id', expenseId);
+
+    if (existingError) throw existingError;
+
+    const existingUserIds = (existingRows || []).map((r: any) => r.user_id as string);
+    const toDelete = existingUserIds.filter((uid) => !newUserIds.includes(uid));
+
+    if (toDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('expense_splits')
+        .delete()
+        .eq('expense_id', expenseId)
+        .in('user_id', toDelete);
+
+      if (deleteError) throw deleteError;
+    }
+
+    // 3) Upsert desired splits to avoid unique-constraint errors even
+    // if some rows already exist for this (expense_id, user_id)
+    if (newUserIds.length > 0) {
+      const splitRows = newUserIds.map((userId) => ({
+        expense_id: expenseId,
+        user_id: userId,
+        amount_owed: effectiveSplits[userId],
+      }));
+
+      const { error: upsertError } = await supabase
+        .from('expense_splits')
+        .upsert(splitRows, { onConflict: 'expense_id,user_id' });
+
+      if (upsertError) throw upsertError;
+    }
+  }
+
+  // Finally, update the main expense row (description, amount, payer, group)
+  // AFTER splits are in their final state so that realtime listeners
+  // that react to changes on `expenses` see the latest splits when
+  // they refetch via getGroupExpenses/getUserExpenses.
   const { error } = await supabase
     .from('expenses')
     .update({
@@ -88,35 +148,6 @@ export const updateExpense = async (expenseId: string, expenseData: Partial<Expe
     .eq('id', expenseId);
 
   if (error) throw error;
-
-  // If participants or splits are provided, replace the existing
-  // rows in expense_splits with the new distribution.
-  if (participants && participants.length > 0) {
-    let effectiveSplits: Record<string, number> = {};
-    if (splitAmounts && Object.keys(splitAmounts).length > 0) {
-      effectiveSplits = splitAmounts;
-    } else if (rest.amount != null) {
-      const perPerson = (rest.amount as number) / participants.length;
-      participants.forEach((userId) => {
-        effectiveSplits[userId] = perPerson;
-      });
-    }
-
-    // Remove previous splits for this expense
-    const { error: deleteError } = await supabase.from('expense_splits').delete().eq('expense_id', expenseId);
-    if (deleteError) throw deleteError;
-
-    if (Object.keys(effectiveSplits).length > 0) {
-      const splitRows = Object.entries(effectiveSplits).map(([userId, amount]) => ({
-        expense_id: expenseId,
-        user_id: userId,
-        amount_owed: amount,
-      }));
-
-      const { error: splitsError } = await supabase.from('expense_splits').insert(splitRows);
-      if (splitsError) throw splitsError;
-    }
-  }
 };
 
 export const getGroupExpenses = async (groupId: string | null) => {
@@ -141,8 +172,14 @@ export const onGroupExpensesChange = (groupId: string | null, callback: (expense
       'postgres_changes',
       { event: '*', schema: 'public', table: 'expenses' },
       async (payload: any) => {
-        const newGroupId = (payload.new as any)?.group_id ?? null;
-        if ((groupId && newGroupId === groupId) || (!groupId && newGroupId === null)) {
+        const eventType = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE' | undefined;
+
+        // For INSERT/UPDATE, the row lives in payload.new; for DELETE it lives in payload.old.
+        const row = eventType === 'DELETE' ? (payload.old as any) : (payload.new as any);
+        const affectedGroupId = row?.group_id ?? null;
+
+        // Only react when the change belongs to the currently watched group.
+        if ((groupId && affectedGroupId === groupId) || (!groupId && affectedGroupId === null)) {
           const expenses = await getGroupExpenses(groupId);
           callback(expenses);
         }

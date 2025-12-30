@@ -47,6 +47,15 @@ export function DashboardView(props: DashboardViewProps) {
     handleJoinGroup,
   } = props;
 
+  // Only show balances that involve the current user (either owes or will receive)
+  const balanceEntries = Object.entries(balances);
+  const userBalanceEntries = currentUser
+    ? balanceEntries.filter(([key]) => {
+        const [fromId, toId] = key.includes('->') ? key.split('->') : key.split('-');
+        return fromId === currentUser.id || toId === currentUser.id;
+      })
+    : balanceEntries;
+
   return (
     <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <nav
@@ -206,11 +215,11 @@ export function DashboardView(props: DashboardViewProps) {
               <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
               Overall Balances
             </h2>
-            {Object.keys(balances).length === 0 ? (
+            {userBalanceEntries.length === 0 ? (
               <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>All settled up!</p>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {Object.entries(balances).map(([key, amount]) => {
+                {userBalanceEntries.map(([key, amount]) => {
                   // New keys use '->' as delimiter; fall back to '-' for any legacy keys
                   const [fromId, toId] = key.includes('->') ? key.split('->') : key.split('-');
                   return (

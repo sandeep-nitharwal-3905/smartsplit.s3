@@ -618,19 +618,13 @@ export default function ExpenseSplitApp() {
         };
 
         await updateSupabaseExpense(editingExpense.id, updatedExpense);
-
+        // Always reload from Supabase so we get the
+        // latest splits/participants and keep everything
+        // in sync with the backend source of truth.
         if (selectedGroup) {
-          setGroupExpenses(groupExpenses.map(e =>
-            e.id === editingExpense.id
-              ? { ...e, ...updatedExpense }
-              : e
-          ));
-        } else {
-          setExpenses(expenses.map(e =>
-            e.id === editingExpense.id
-              ? { ...e, ...updatedExpense }
-              : e
-          ));
+          await loadGroupExpenses();
+        } else if (currentUser) {
+          await loadUserExpenses();
         }
         
         cancelEditExpense();

@@ -190,6 +190,28 @@ create policy "Create expenses"
     and group_id in (select public.get_my_group_ids())
   );
 
+-- Allow creators to update their own expenses
+drop policy if exists "Update expenses" on public.expenses;
+create policy "Update expenses"
+  on public.expenses for update
+  using (
+    created_by = auth.uid()
+    and group_id in (select public.get_my_group_ids())
+  )
+  with check (
+    created_by = auth.uid()
+    and group_id in (select public.get_my_group_ids())
+  );
+
+-- Allow creators to delete their own expenses
+drop policy if exists "Delete expenses" on public.expenses;
+create policy "Delete expenses"
+  on public.expenses for delete
+  using (
+    created_by = auth.uid()
+    and group_id in (select public.get_my_group_ids())
+  );
+
 -- EXPENSE SPLITS
 drop policy if exists "View splits of your groups" on public.expense_splits;
 drop policy if exists "View splits" on public.expense_splits;
@@ -212,6 +234,37 @@ create policy "Create splits"
       select 1 from public.expenses
       where id = expense_id
       and created_by = auth.uid()
+    )
+  );
+
+-- Allow creators to update existing splits (needed for upsert)
+drop policy if exists "Update splits" on public.expense_splits;
+create policy "Update splits"
+  on public.expense_splits for update
+  using (
+    exists (
+      select 1 from public.expenses
+      where id = expense_id
+        and created_by = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.expenses
+      where id = expense_id
+        and created_by = auth.uid()
+    )
+  );
+
+-- Allow creators to delete splits for their own expenses (needed for cascades)
+drop policy if exists "Delete splits" on public.expense_splits;
+create policy "Delete splits"
+  on public.expense_splits for delete
+  using (
+    exists (
+      select 1 from public.expenses
+      where id = expense_id
+        and created_by = auth.uid()
     )
   );
 

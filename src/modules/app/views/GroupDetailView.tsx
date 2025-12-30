@@ -1,5 +1,7 @@
-import { Copy, LogOut, Plus, Share2, Trash2, Users } from 'lucide-react';
+import { Copy, LogOut, Plus, Share2, Trash2, Users, Heart } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import type { Expense, Group, User } from '../types';
+import { SupportModal } from '../components/SupportModal';
 
 interface GroupDetailViewProps {
   isDarkTheme: boolean;
@@ -51,6 +53,36 @@ export function GroupDetailView(props: GroupDetailViewProps) {
     setEditGroupName,
     onRenameGroup,
   } = props;
+
+  const [showSupportModal, setShowSupportModal] = useState(false);
+
+  // Helper to detect settlement-only expenses created via "Settle Up"
+  const isSettlementExpense = (expense: Expense) => {
+    if (expense.isSettlement) return true;
+
+    const desc = expense.description?.trim().toLowerCase() || '';
+    // Treat as a settlement only when it matches the exact prefix
+    // pattern we generate in handleSettleUp (e.g. "Settlement: A paid B")
+    return desc.startsWith('settlement:') || desc.startsWith('settle up:');
+  };
+
+  // Calculate total expenses for this group (excluding settlements) - memoized
+  const totalGroupExpenses = useMemo(
+    () =>
+      expenses
+        .filter((expense) => !isSettlementExpense(expense))
+        .reduce((sum, expense) => sum + Number(expense.amount), 0),
+    [expenses]
+  );
+
+  // Only show balances that involve the current user (either owes or will receive)
+  const balanceEntries = Object.entries(balances);
+  const userBalanceEntries = currentUser
+    ? balanceEntries.filter(([key]) => {
+        const [fromId, toId] = key.includes('->') ? key.split('->') : key.split('-');
+        return fromId === currentUser.id || toId === currentUser.id;
+      })
+    : balanceEntries;
 
   return (
     <div className={`min-h-screen ${isDarkTheme ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -188,16 +220,44 @@ export function GroupDetailView(props: GroupDetailViewProps) {
           )}
         </div>
 
+        {/* Support Banner */}
+        {totalGroupExpenses > 0 && (
+          <div
+            className={`p-4 rounded-lg border ${
+              isDarkTheme
+                ? 'bg-gradient-to-r from-pink-900/20 to-red-900/20 border-pink-700/50'
+                : 'bg-gradient-to-r from-pink-50 to-red-50 border-pink-200'
+            }`}
+          >
+            <button
+              onClick={() => setShowSupportModal(true)}
+              className={`w-full flex flex-col sm:flex-row items-center justify-center gap-2 text-sm sm:text-base ${
+                isDarkTheme ? 'text-pink-300 hover:text-pink-200' : 'text-pink-700 hover:text-pink-800'
+              } transition`}
+            >
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5 fill-current" />
+                <span className="font-medium">
+                  Total expenses in this group: ₹{totalGroupExpenses.toFixed(2)}
+                </span>
+              </div>
+              <span className="text-xs sm:text-sm">
+                • Support us to keep tracking your expenses easy!
+              </span>
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
             <h2 className={`text-lg sm:text-xl font-bold mb-3 sm:mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
               Group Balances
             </h2>
-            {Object.keys(balances).length === 0 ? (
+            {userBalanceEntries.length === 0 ? (
               <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>All settled up!</p>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {Object.entries(balances).map(([key, amount]) => {
+                {userBalanceEntries.map(([key, amount]) => {
                   // New keys use '->' as delimiter; fall back to '-' for any legacy keys
                   const [fromId, toId] = key.includes('->') ? key.split('->') : key.split('-');
                   return (
@@ -331,6 +391,15 @@ export function GroupDetailView(props: GroupDetailViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Support Modal */}
+      <SupportModal
+        isDarkTheme={isDarkTheme}
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        context="group"
+        totalAmount={totalGroupExpenses}
+      />
     </div>
   );
 }
