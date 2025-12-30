@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://smartsplit-self.vercel.app/sitemap.xml
+Sitemap: https://smartsplit-s3.vercel.app/sitemap.xml
