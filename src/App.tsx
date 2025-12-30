@@ -37,7 +37,10 @@ export default function ExpenseSplitApp() {
   const [view, setView] = useState('home');
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  // All expenses for the current user (used on dashboard / overall balances)
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  // Expenses for the currently selected group (used on group detail)
+  const [groupExpenses, setGroupExpenses] = useState<Expense[]>([]);
   const [friends, setFriends] = useState<User[]>([]);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -106,7 +109,7 @@ export default function ExpenseSplitApp() {
 
   useEffect(() => {
     calculateBalances();
-  }, [expenses, friends, selectedGroup]);
+  }, [expenses, groupExpenses, friends, selectedGroup]);
 
   // Realtime updates for user's groups
   useEffect(() => {
@@ -126,8 +129,10 @@ export default function ExpenseSplitApp() {
     if (!currentUser || selectedGroup) return;
 
     const unsubscribe = onUserExpensesChange(currentUser.id, (updatedExpenses) => {
-      setExpenses(updatedExpenses as Expense[]);
-      loadUsersFromExpenses(updatedExpenses as Expense[]);
+      // For dashboard "Overall Balances" we only want personal (non-group) expenses
+      const personalExpenses = (updatedExpenses as Expense[]).filter((e) => !e.groupId);
+      setExpenses(personalExpenses);
+      loadUsersFromExpenses(personalExpenses);
     });
 
     return () => {
@@ -140,7 +145,7 @@ export default function ExpenseSplitApp() {
     if (!selectedGroup) return;
 
     const unsubscribe = onGroupExpensesChange(selectedGroup.id, (updatedExpenses) => {
-      setExpenses(updatedExpenses as Expense[]);
+      setGroupExpenses(updatedExpenses as Expense[]);
       loadUsersFromExpenses(updatedExpenses as Expense[]);
     });
 
@@ -186,6 +191,7 @@ export default function ExpenseSplitApp() {
             setGroups([]);
             setFriends([]);
             setExpenses([]);
+            setGroupExpenses([]);
             navigateTo('home');
             setLoading(false);
           }
@@ -259,6 +265,7 @@ export default function ExpenseSplitApp() {
         // Clear sensitive state when going to home
         setSelectedGroup(null);
         setExpenses([]);
+        setGroupExpenses([]);
         setView('home');
       } else {
         // For completely unknown hashes (that aren't Supabase-related),
@@ -382,8 +389,10 @@ export default function ExpenseSplitApp() {
     
     try {
       const userExpenses = await getUserExpenses(currentUser.id);
-      setExpenses(userExpenses as Expense[]);
-      await loadUsersFromExpenses(userExpenses as Expense[]);
+      // Keep only non-group expenses for the dashboard "Overall Balances"
+      const personalExpenses = (userExpenses as Expense[]).filter((e) => !e.groupId);
+      setExpenses(personalExpenses);
+      await loadUsersFromExpenses(personalExpenses);
     } catch (error) {
       console.error('Error loading user expenses:', error);
     }
@@ -394,7 +403,7 @@ export default function ExpenseSplitApp() {
     
     try {
       const groupExpenses = await getGroupExpenses(selectedGroup.id);
-      setExpenses(groupExpenses as Expense[]);
+      setGroupExpenses(groupExpenses as Expense[]);
       
       // Load user data for all participants in expenses
       await loadUsersFromExpenses(groupExpenses as Expense[]);
@@ -409,7 +418,7 @@ export default function ExpenseSplitApp() {
   const calculateBalances = () => {
     const balanceMap: Record<string, number> = {};
     const relevantExpenses = selectedGroup
-      ? expenses.filter((e) => e.groupId === selectedGroup.id)
+      ? groupExpenses
       : expenses.filter((e) => currentUser && e.participants.includes(currentUser.id));
 
     relevantExpenses.forEach((expense) => {
@@ -606,12 +615,20 @@ export default function ExpenseSplitApp() {
         };
 
         await updateSupabaseExpense(editingExpense.id, updatedExpense);
-        
-        setExpenses(expenses.map(e => 
-          e.id === editingExpense.id 
-            ? { ...e, ...updatedExpense } 
-            : e
-        ));
+
+        if (selectedGroup) {
+          setGroupExpenses(groupExpenses.map(e =>
+            e.id === editingExpense.id
+              ? { ...e, ...updatedExpense }
+              : e
+          ));
+        } else {
+          setExpenses(expenses.map(e =>
+            e.id === editingExpense.id
+              ? { ...e, ...updatedExpense }
+              : e
+          ));
+        }
         
         cancelEditExpense();
         alert('Expense updated successfully!');
@@ -630,8 +647,12 @@ export default function ExpenseSplitApp() {
 
         const docRef = await createSupabaseExpense(newExpense);
         const createdExpense = { id: docRef.id, ...newExpense } as Expense;
-        
-        setExpenses([...expenses, createdExpense]);
+
+        if (selectedGroup) {
+          setGroupExpenses([...groupExpenses, createdExpense]);
+        } else {
+          setExpenses([...expenses, createdExpense]);
+        }
         
         // Reset form
         setExpenseDesc('');
@@ -677,8 +698,13 @@ export default function ExpenseSplitApp() {
       };
       
       const docRef = await createSupabaseExpense(newExpense);
-      const updatedExpenses = [...expenses, { id: docRef.id, ...newExpense }];
-      setExpenses(updatedExpenses);
+      const createdExpense = { id: docRef.id, ...newExpense } as Expense;
+
+      if (selectedGroup) {
+        setGroupExpenses([...groupExpenses, createdExpense]);
+      } else {
+        setExpenses([...expenses, createdExpense]);
+      }
       
       // Reload expenses to ensure everything is up to date
       if (selectedGroup) {
@@ -773,7 +799,11 @@ export default function ExpenseSplitApp() {
   const deleteExpense = async (expenseId: string) => {
     try {
       await deleteSupabaseExpense(expenseId);
-      setExpenses(expenses.filter(e => e.id !== expenseId));
+      if (selectedGroup) {
+        setGroupExpenses(groupExpenses.filter(e => e.id !== expenseId));
+      } else {
+        setExpenses(expenses.filter(e => e.id !== expenseId));
+      }
     } catch (error) {
       console.error('Error deleting expense:', error);
       alert('Failed to delete expense');
@@ -824,6 +854,7 @@ export default function ExpenseSplitApp() {
       await deleteSupabaseGroup(groupId);
       setGroups(groups.filter(g => g.id !== groupId));
       setSelectedGroup(null);
+      setGroupExpenses([]);
       navigateTo('dashboard');
       alert('Group deleted successfully');
     } catch (error) {
@@ -987,7 +1018,7 @@ export default function ExpenseSplitApp() {
           currentUser={currentUser}
           selectedGroup={selectedGroup}
           balances={balances}
-          expenses={expenses}
+          expenses={groupExpenses}
           getUserName={getUserName}
           formatDateTime={formatDateTime}
           handleSettleUp={handleSettleUp}
@@ -995,7 +1026,7 @@ export default function ExpenseSplitApp() {
           deleteExpense={deleteExpense}
           handleLogout={handleLogout}
           onBack={() => {
-            setExpenses([]);
+            setGroupExpenses([]);
             setSelectedGroup(null);
             window.history.back();
           }}
