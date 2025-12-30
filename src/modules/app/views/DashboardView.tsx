@@ -64,7 +64,18 @@ export function DashboardView(props: DashboardViewProps) {
             >
               {isDarkTheme ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
-            <span className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">Welcome, {currentUser?.name}</span>
+            <button
+              onClick={() => setView('profile')}
+              className={`flex items-center gap-2 px-3 py-2 rounded transition ${
+                isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'
+              }`}
+              title="View Profile"
+            >
+              <User className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none hidden sm:inline">
+                {currentUser?.name}
+              </span>
+            </button>
             <button
               onClick={handleLogout}
               className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}

@@ -8,6 +8,7 @@ import { DashboardView } from './modules/app/views/DashboardView';
 import { GroupDetailView } from './modules/app/views/GroupDetailView';
 import { LoginView } from './modules/app/views/LoginView';
 import { ManageMembersView } from './modules/app/views/ManageMembersView';
+import { UserProfileView } from './modules/app/views/UserProfileView';
 import type { Group, User, Expense, Notification } from './modules/app/types';
 import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser } from './modules/auth/authService';
 import {
@@ -29,7 +30,7 @@ import {
   onUserGroupsChange,
   onGroupExpensesChange,
   onUserExpensesChange,
-  // upsertProfile
+  upsertProfile
 } from './modules/data';
 
 export default function ExpenseSplitApp() {
@@ -251,6 +252,8 @@ export default function ExpenseSplitApp() {
         setView('login');
       } else if (hash === 'dashboard') {
         setView('dashboard');
+      } else if (hash === 'profile') {
+        setView('profile');
       } else if (hash === 'groupDetail') {
         setView('groupDetail');
       } else if (hash === 'addExpense') {
@@ -931,6 +934,26 @@ export default function ExpenseSplitApp() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  const handleUpdateProfile = async (newName: string) => {
+    if (!currentUser) return;
+    
+    try {
+      await upsertProfile({
+        id: currentUser.id,
+        email: currentUser.email,
+        name: newName,
+        createdAt: currentUser.createdAt,
+      });
+      
+      setCurrentUser({ ...currentUser, name: newName });
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile');
+      throw error;
+    }
+  };
+
   // Loading screen
   if (loading) {
     return (
@@ -1007,6 +1030,21 @@ export default function ExpenseSplitApp() {
           joinGroupId={joinGroupId}
           setJoinGroupId={setJoinGroupId}
           handleJoinGroup={handleJoinGroup}
+        />
+        <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
+      </>
+    );
+  }
+
+  // User Profile View
+  if (view === 'profile') {
+    return (
+      <>
+        <UserProfileView
+          isDarkTheme={isDarkTheme}
+          currentUser={currentUser}
+          setView={navigateTo}
+          onUpdateProfile={handleUpdateProfile}
         />
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
