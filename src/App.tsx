@@ -989,7 +989,11 @@ export default function ExpenseSplitApp() {
           balances={balances}
           expenses={expenses}
           setView={navigateTo}
-          setSelectedGroup={setSelectedGroup}
+          setSelectedGroup={(group) => {
+            setSelectedGroup(group);
+            setIsEditingGroupName(false);
+            setEditGroupName('');
+          }}
           handleLogout={handleLogout}
           handleSettleUp={handleSettleUp}
           getUserName={getUserName}
@@ -1028,6 +1032,8 @@ export default function ExpenseSplitApp() {
           onBack={() => {
             setGroupExpenses([]);
             setSelectedGroup(null);
+            setIsEditingGroupName(false);
+            setEditGroupName('');
             window.history.back();
           }}
           onAddExpense={() => {
@@ -1090,6 +1096,8 @@ export default function ExpenseSplitApp() {
           setSelectedGroup={(group) => {
             setSelectedGroup(group);
             if (group) loadGroupMembers(group);
+            setIsEditingGroupName(false);
+            setEditGroupName('');
           }}
           tempMemberEmail={tempMemberEmail}
           setTempMemberEmail={setTempMemberEmail}
