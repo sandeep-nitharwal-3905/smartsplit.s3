@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Link as LinkIcon, LogOut, Moon, Sun, User, Users } from 'lucide-react';
+import { ArrowLeftRight, Link as LinkIcon, LogOut, MessageSquare, Moon, Sun, User, Users } from 'lucide-react';
 import type { Expense, Group, User as AppUser } from '../types';
 
 interface DashboardViewProps {
@@ -24,6 +24,8 @@ interface DashboardViewProps {
   joinGroupId: string;
   setJoinGroupId: (value: string) => void;
   handleJoinGroup: () => Promise<void>;
+  setShowFeedbackModal: (value: boolean) => void;
+  isAdmin: boolean;
 }
 
 export function DashboardView(props: DashboardViewProps) {
@@ -45,6 +47,8 @@ export function DashboardView(props: DashboardViewProps) {
     joinGroupId,
     setJoinGroupId,
     handleJoinGroup,
+    setShowFeedbackModal,
+    isAdmin,
   } = props;
 
   // Only show balances that involve the current user (either owes or will receive)
@@ -313,9 +317,34 @@ export function DashboardView(props: DashboardViewProps) {
       )}
 
       <footer className="mt-8 pb-6 text-center">
-        <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-          Developed & designed with <span className="text-red-500">❤</span> by S3
-        </p>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={() => setShowFeedbackModal(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${
+              isDarkTheme
+                ? 'bg-gray-800 hover:bg-gray-700 text-cyan-400 border border-gray-700'
+                : 'bg-white hover:bg-gray-50 text-teal-600 border border-gray-300 shadow-sm'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Send Feedback
+          </button>
+          
+          {isAdmin && (
+            <button
+              onClick={() => setView('admin')}
+              className={`text-xs underline ${
+                isDarkTheme ? 'text-gray-500 hover:text-gray-400' : 'text-gray-500 hover:text-gray-600'
+              }`}
+            >
+              Admin Panel
+            </button>
+          )}
+          
+          <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+            Developed & designed with <span className="text-red-500">❤</span> by S3
+          </p>
+        </div>
       </footer>
     </div>
   );

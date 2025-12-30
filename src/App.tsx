@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import HomePage from './components/HomePage';
 import { NotificationToast } from './modules/app/components/NotificationToast';
+import { FeedbackModal } from './modules/app/components/FeedbackModal';
 import { AddExpenseView } from './modules/app/views/AddExpenseView';
 import { AddFriendView } from './modules/app/views/AddFriendView';
 import { AddGroupView } from './modules/app/views/AddGroupView';
@@ -9,6 +10,7 @@ import { GroupDetailView } from './modules/app/views/GroupDetailView';
 import { LoginView } from './modules/app/views/LoginView';
 import { ManageMembersView } from './modules/app/views/ManageMembersView';
 import { UserProfileView } from './modules/app/views/UserProfileView';
+import { AdminPanelView } from './modules/app/views/AdminPanelView';
 import type { Group, User, Expense, Notification } from './modules/app/types';
 import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser } from './modules/auth/authService';
 import {
@@ -30,7 +32,11 @@ import {
   onUserGroupsChange,
   onGroupExpensesChange,
   onUserExpensesChange,
-  upsertProfile
+  upsertProfile,
+  submitFeedback,
+  getAllFeedbacks,
+  isAdmin as checkIsAdmin,
+  type Feedback,
 } from './modules/data';
 
 export default function ExpenseSplitApp() {
@@ -107,6 +113,10 @@ export default function ExpenseSplitApp() {
     } catch {}
   }, []);
 
+  // Feedback states
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     calculateBalances();
@@ -163,6 +173,22 @@ export default function ExpenseSplitApp() {
       loadUserExpenses();
     }
   }, [selectedGroup, currentUser, view]);
+
+  // Check if user is admin
+  useEffect(() => {
+    if (currentUser) {
+      checkIsAdmin(currentUser.id).then(setIsAdmin);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [currentUser]);
+
+  // Load feedbacks for admin
+  useEffect(() => {
+    if (isAdmin && view === 'admin') {
+      loadFeedbacks();
+    }
+  }, [isAdmin, view]);
 
   // Authentication effect
   useEffect(() => {
@@ -254,6 +280,8 @@ export default function ExpenseSplitApp() {
         setView('dashboard');
       } else if (hash === 'profile') {
         setView('profile');
+      } else if (hash === 'admin') {
+        setView('admin');
       } else if (hash === 'groupDetail') {
         setView('groupDetail');
       } else if (hash === 'addExpense') {
@@ -501,6 +529,20 @@ export default function ExpenseSplitApp() {
       console.error('Logout error:', error);
       alert(error.message || 'Logout failed');
     }
+  };
+
+  const handleSubmitFeedback = async (feedbackData: { message: string; rating?: number }) => {
+    const result = await submitFeedback(feedbackData);
+    if (result.success) {
+      alert('Thank you for your feedback!');
+    } else {
+      alert(result.error || 'Failed to submit feedback');
+    }
+  };
+
+  const loadFeedbacks = async () => {
+    const feedbackList = await getAllFeedbacks();
+    setFeedbacks(feedbackList);
   };
 
   const handleAddGroup = async () => {
@@ -1024,6 +1066,38 @@ export default function ExpenseSplitApp() {
           joinGroupId={joinGroupId}
           setJoinGroupId={setJoinGroupId}
           handleJoinGroup={handleJoinGroup}
+          setShowFeedbackModal={setShowFeedbackModal}
+          isAdmin={isAdmin}
+        />
+        {showFeedbackModal && (
+          <FeedbackModal
+            isDarkTheme={isDarkTheme}
+            onClose={() => setShowFeedbackModal(false)}
+            onSubmit={handleSubmitFeedback}
+            currentUser={currentUser}
+          />
+        )}
+        <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
+      </>
+    );
+  }
+
+  // Admin Panel View
+  if (view === 'admin') {
+    if (!isAdmin) {
+      // Redirect non-admin users
+      navigateTo('dashboard');
+      return null;
+    }
+    
+    return (
+      <>
+        <AdminPanelView
+          isDarkTheme={isDarkTheme}
+          feedbacks={feedbacks}
+          setView={navigateTo}
+          formatDateTime={formatDateTime}
+          onDeleteFeedback={loadFeedbacks}
         />
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>

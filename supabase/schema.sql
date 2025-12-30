@@ -67,6 +67,17 @@ create table if not exists public.friendships (
   check (user_id != friend_id) -- Prevent self-friending
 );
 
+-- 9. Feedbacks
+create table if not exists public.feedbacks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  user_name text,
+  user_email text,
+  message text not null,
+  rating integer check (rating >= 1 and rating <= 5),
+  created_at timestamptz default now()
+);
+
 -- Indexes for performance
 create index if not exists idx_group_members_user on public.group_members(user_id);
 create index if not exists idx_group_members_group on public.group_members(group_id);
@@ -78,6 +89,8 @@ create index if not exists idx_expenses_created_at on public.expenses(created_at
 create index if not exists idx_friendships_user on public.friendships(user_id);
 create index if not exists idx_friendships_friend on public.friendships(friend_id);
 create index if not exists idx_settlements_group on public.settlements(group_id);
+create index if not exists idx_feedbacks_created_at on public.feedbacks(created_at);
+create index if not exists idx_feedbacks_user on public.feedbacks(user_id);
 
 -- Enable RLS
 alter table public.profiles enable row level security;
@@ -87,6 +100,7 @@ alter table public.expenses enable row level security;
 alter table public.expense_splits enable row level security;
 alter table public.settlements enable row level security;
 alter table public.friendships enable row level security;
+alter table public.feedbacks enable row level security;
 
 -- ================= RLS POLICIES =================
 
@@ -293,6 +307,26 @@ create policy "Create friendship"
   on public.friendships for insert
   with check (auth.uid() = user_id);
 
+-- FEEDBACKS
+drop policy if exists "Anyone can create feedback" on public.feedbacks;
+create policy "Anyone can create feedback"
+  on public.feedbacks for insert
+  with check (true);
+
+-- Note: Admin check is handled in the application layer via VITE_ADMIN_EMAILS
+-- This policy allows authenticated users to attempt to view feedbacks,
+-- but the actual admin check happens in the TypeScript code
+drop policy if exists "Admins can view all feedbacks" on public.feedbacks;
+create policy "Admins can view all feedbacks"
+  on public.feedbacks for select
+  using (auth.uid() is not null);
+
+-- Allow authenticated users to delete feedbacks (admin check is done in application layer)
+drop policy if exists "Authenticated users can delete feedbacks" on public.feedbacks;
+create policy "Authenticated users can delete feedbacks"
+  on public.feedbacks for delete
+  using (auth.uid() is not null);
+
 -- ================= TRIGGERS =================
 
 -- User Profile Trigger
@@ -411,5 +445,17 @@ begin
       and tablename = 'friendships'
   ) then
     alter publication supabase_realtime add table public.friendships;
+  end if;
+end$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'feedbacks'
+  ) then
+    alter publication supabase_realtime add table public.feedbacks;
   end if;
 end$$;
