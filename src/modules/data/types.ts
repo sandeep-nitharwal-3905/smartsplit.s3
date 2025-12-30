@@ -2,7 +2,7 @@ export interface Profile {
   id: string;
   email: string;
   name: string;
-  createdAt?: string;
+  createdAt: string;
 }
 
 export interface Group {

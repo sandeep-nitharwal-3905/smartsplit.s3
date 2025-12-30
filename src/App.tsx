@@ -9,7 +9,7 @@ import { GroupDetailView } from './modules/app/views/GroupDetailView';
 import { LoginView } from './modules/app/views/LoginView';
 import { ManageMembersView } from './modules/app/views/ManageMembersView';
 import type { Group, User, Expense, Notification } from './modules/app/types';
-import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, sendVerificationEmail } from './modules/auth/authService';
+import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle } from './modules/auth/authService';
 import {
   createGroup as createSupabaseGroup,
   getUserGroups,
@@ -76,7 +76,6 @@ export default function ExpenseSplitApp() {
 
   // Notification states
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [previousExpenses, setPreviousExpenses] = useState<Expense[]>([]);
 
   // Edit expense states
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -867,23 +866,6 @@ export default function ExpenseSplitApp() {
     }).catch(() => {
       alert('Failed to copy. Group ID: ' + groupId);
     });
-  };
-
-  // Notification functions
-  const addNotification = (message: string, type: 'expense' | 'settlement' | 'group') => {
-    const notification: Notification = {
-      id: Date.now().toString(),
-      message,
-      type,
-      timestamp: Date.now()
-    };
-    
-    setNotifications(prev => [...prev, notification]);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      removeNotification(notification.id);
-    }, 5000);
   };
 
   const removeNotification = (id: string) => {

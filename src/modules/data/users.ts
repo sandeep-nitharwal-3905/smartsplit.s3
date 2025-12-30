@@ -22,7 +22,7 @@ export const getUserByEmail = async (email: string) => {
     id: data.id,
     email: data.email,
     name: data.name,
-    createdAt: data.created_at,
+    createdAt: data.created_at || new Date().toISOString(),
   } as Profile) : null;
 };
 
@@ -39,6 +39,6 @@ export const getUsers = async (userIds: string[]) => {
     id: row.id,
     email: row.email,
     name: row.name,
-    createdAt: row.created_at,
+    createdAt: row.created_at || new Date().toISOString(),
   } as Profile));
 };
