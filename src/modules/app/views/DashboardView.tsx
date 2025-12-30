@@ -314,7 +314,7 @@ export function DashboardView(props: DashboardViewProps) {
 
       <footer className="mt-8 pb-6 text-center">
         <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-          Developed & designed with <span className="text-red-500">❤</span> by Sandeep Nitharwal
+          Developed & designed with <span className="text-red-500">❤</span> by S3
         </p>
       </footer>
     </div>

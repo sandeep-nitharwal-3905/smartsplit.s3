@@ -1,5 +1,6 @@
 import { X, Heart, Copy } from 'lucide-react';
 import { useState } from 'react';
+import upiQRImage from '../../../assets/upiqr.jpeg';
 
 interface SupportModalProps {
   isDarkTheme: boolean;
@@ -22,7 +23,7 @@ export function SupportModal({
   const [copied, setCopied] = useState(false);
 
   // UPI ID - Replace with your actual UPI ID
-  const UPI_ID = 'your-upi-id@paytm'; // Change this to your actual UPI ID
+  const UPI_ID = 'sandeep392005@oksbi'; // Change this to your actual UPI ID
   
   const predefinedAmounts = [11, 21, 101];
 
@@ -134,7 +135,7 @@ export function SupportModal({
               type="number"
               value={customAmount}
               onChange={(e) => handleCustomAmountChange(e.target.value)}
-              placeholder="Enter amount"
+              placeholder="Enter amount ₹(e.g., 51)"
               className={`w-full p-3 rounded-lg border ${
                 isDarkTheme
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500'
@@ -168,20 +169,17 @@ export function SupportModal({
 
               {showQR && (
                 <div className="p-4 bg-white rounded-lg">
-                  <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
-                    {/* QR Code Placeholder - You can integrate a QR code generator library */}
-                    <div className="text-center p-8">
-                      <div className="text-gray-400 mb-2">
-                        <svg className="w-32 h-32 mx-auto" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13-2h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3zm0-1v-3h-2v3h2z"/>
-                        </svg>
-                      </div>
-                      <p className="text-sm text-gray-600">Scan with any UPI app</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {selectedAmount ? `₹${selectedAmount}` : customAmount ? `₹${customAmount}` : 'Select amount above'}
-                      </p>
-                    </div>
+                  <div className="rounded-lg overflow-hidden">
+                    <img 
+                      src={upiQRImage} 
+                      alt="UPI QR Code" 
+                      className="w-full h-auto"
+                    />
                   </div>
+                  <p className="text-sm text-gray-600 text-center mt-3">Scan with any UPI app</p>
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    {selectedAmount ? `₹${selectedAmount}` : customAmount ? `₹${customAmount}` : 'Any amount is appreciated'}
+                  </p>
                 </div>
               )}
 

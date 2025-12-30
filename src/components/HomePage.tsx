@@ -419,7 +419,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2025 SmartSplit. All rights reserved.</p>
-            <p>Developed & designed with <span className="text-red-500">❤</span> by Sandeep Nitharwal</p>
+            <p>Developed & designed with <span className="text-red-500">❤</span> by S3</p>
           </div>
         </div>
       </footer>

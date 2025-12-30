@@ -205,7 +205,7 @@ export function LoginView(props: LoginViewProps) {
 
         <div className={`text-center mt-6 pt-4 border-t ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'}`}>
           <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-            Developed & designed with <span className="text-red-500">❤</span> by Sandeep Nitharwal
+            Developed & designed with <span className="text-red-500">❤</span> by S3
           </p>
         </div>
       </div>
