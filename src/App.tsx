@@ -9,7 +9,7 @@ import { GroupDetailView } from './modules/app/views/GroupDetailView';
 import { LoginView } from './modules/app/views/LoginView';
 import { ManageMembersView } from './modules/app/views/ManageMembersView';
 import type { Group, User, Expense, Notification } from './modules/app/types';
-import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle } from './modules/auth/authService';
+import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser } from './modules/auth/authService';
 import {
   createGroup as createSupabaseGroup,
   getUserGroups,
@@ -164,29 +164,24 @@ export default function ExpenseSplitApp() {
 
     const initAuth = async () => {
       try {
-        unsubscribe = onAuthStateChange(async (authUser) => {
+        const handleAuthUser = async (authUser: any | null) => {
           if (authUser) {
-            // User is signed in
             const user: User = {
               id: authUser.uid,
               email: authUser.email || '',
               name: authUser.displayName || authUser.email?.split('@')[0] || 'User',
               createdAt: authUser.metadata.creationTime
             };
-            
+
             setCurrentUser(user);
-            
-            // Upsert user profile in database
-            // Profile upsert removed due to RLS issues
-            
+
             // Load user data
             await loadUserData(user.id);
             await loadFriends(user.id);
-            
+
             navigateTo('dashboard');
             setLoading(false);
           } else {
-            // User is signed out
             setCurrentUser(null);
             setGroups([]);
             setFriends([]);
@@ -194,6 +189,21 @@ export default function ExpenseSplitApp() {
             navigateTo('home');
             setLoading(false);
           }
+        };
+
+        // 1) Check for an existing session/user on initial load (including OAuth redirect)
+        try {
+          const existingUser = await getCurrentUser();
+          if (existingUser) {
+            await handleAuthUser(existingUser);
+          }
+        } catch (e) {
+          console.warn('Error getting current user on init:', e);
+        }
+
+        // 2) Subscribe to future auth state changes
+        unsubscribe = onAuthStateChange(async (authUser) => {
+          await handleAuthUser(authUser);
         });
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -211,7 +221,24 @@ export default function ExpenseSplitApp() {
   // Handle browser/mobile back button with hash-based routing
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '') || 'home';
+      // While auth is still initializing, don't touch the hash.
+      // Supabase needs to read and clear its own access_token hash first.
+      if (loading) {
+        return;
+      }
+
+      const rawHash = window.location.hash.replace('#', '');
+
+      // Ignore Supabase auth hashes like #access_token=... or #error_description=...
+      if (
+        rawHash.startsWith('access_token') ||
+        rawHash.startsWith('error_description') ||
+        rawHash.startsWith('type=recovery')
+      ) {
+        return;
+      }
+
+      const hash = rawHash || 'home';
       
       // Map hash to view and handle state cleanup
       if (hash === 'login') {
@@ -234,17 +261,18 @@ export default function ExpenseSplitApp() {
         setExpenses([]);
         setView('home');
       } else {
-        // Default to home for unknown hashes
+        // For completely unknown hashes (that aren't Supabase-related),
+        // normalize back to home.
         window.location.hash = 'home';
       }
     };
 
-    // Handle initial load
+    // Handle initial load (after auth has had a chance to run once)
     handleHashChange();
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [loading]);
 
   // Navigation helper to change hash (and thus view)
   const navigateTo = (newView: string) => {
