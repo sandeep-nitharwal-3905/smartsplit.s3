@@ -84,6 +84,18 @@
     "signUpHere": "Sign up here",
     "tagline": "Split expenses with friends",
     "verificationSent": "Verification email sent! Please check your inbox.",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset Password",
+    "resetPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetLink": "Send Reset Link",
+    "resetLinkSent": "Password reset link sent! Please check your email.",
+    "backToLogin": "Back to Login",
+    "setNewPassword": "Set New Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePassword": "Update Password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "passwordUpdated": "Password updated successfully!",
     "logout": "Logout"
   },
   "dashboard": {

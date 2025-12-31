@@ -84,6 +84,18 @@
     "signUpHere": "यहाँ साइन अप करें",
     "tagline": "दोस्तों के साथ खर्च विभाजित करें",
     "verificationSent": "सत्यापन ईमेल भेजा गया! कृपया अपना इनबॉक्स जांचें।",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "resetPassword": "पासवर्ड रीसेट करें",
+    "resetPasswordDescription": "अपना ईमेल पता दर्ज करें और हम आपको अपना पासवर्ड रीसेट करने के लिए एक लिंक भेजेंगे।",
+    "sendResetLink": "रीसेट लिंक भेजें",
+    "resetLinkSent": "पासवर्ड रीसेट लिंक भेजा गया! कृपया अपना ईमेल जांचें।",
+    "backToLogin": "लॉगिन पर वापस जाएं",
+    "setNewPassword": "नया पासवर्ड सेट करें",
+    "newPassword": "नया पासवर्ड",
+    "confirmPassword": "पासवर्ड की पुष्टि करें",
+    "updatePassword": "पासवर्ड अपडेट करें",
+    "passwordsDoNotMatch": "पासवर्ड मेल नहीं खाते",
+    "passwordUpdated": "पासवर्ड सफलतापूर्वक अपडेट किया गया!",
     "logout": "लॉगआउट"
   },
   "dashboard": {

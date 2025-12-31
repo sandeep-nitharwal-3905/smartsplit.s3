@@ -8,11 +8,12 @@ import { AddGroupView } from './modules/app/views/AddGroupView';
 import { DashboardView } from './modules/app/views/DashboardView';
 import { GroupDetailView } from './modules/app/views/GroupDetailView';
 import { LoginView } from './modules/app/views/LoginView';
+import { ResetPasswordView } from './modules/app/views/ResetPasswordView';
 import { ManageMembersView } from './modules/app/views/ManageMembersView';
 import { UserProfileView } from './modules/app/views/UserProfileView';
 import { AdminPanelView } from './modules/app/views/AdminPanelView';
 import type { Group, User, Expense, Notification } from './modules/app/types';
-import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser } from './modules/auth/authService';
+import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword } from './modules/auth/authService';
 import {
   createGroup as createSupabaseGroup,
   getUserGroups,
@@ -58,6 +59,12 @@ export default function ExpenseSplitApp() {
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetPasswordSent, setResetPasswordSent] = useState(false);
+  const [showResetPasswordForm, setShowResetPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
 
   // Expense form states
   const [expenseDesc, setExpenseDesc] = useState('');
@@ -112,6 +119,13 @@ export default function ExpenseSplitApp() {
       if (stored) setIsDarkTheme(stored === 'dark');
     } catch {}
   }, []);
+
+  // Reset password sent state when modal is closed
+  useEffect(() => {
+    if (!showForgotPassword) {
+      setResetPasswordSent(false);
+    }
+  }, [showForgotPassword]);
 
   // Feedback states
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -249,6 +263,15 @@ export default function ExpenseSplitApp() {
     return () => {
       if (unsubscribe) unsubscribe();
     };
+  }, []);
+
+  // Detect password reset from email link
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      setShowResetPasswordForm(true);
+      setView('login');
+    }
   }, []);
 
   // Handle browser/mobile back button with hash-based routing
@@ -521,6 +544,56 @@ export default function ExpenseSplitApp() {
       alert(error.message || 'Google sign-in failed');
     }
   };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      alert('Please enter your email address');
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+      setResetPasswordSent(true);
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      alert(error.message || 'Failed to send password reset email');
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      await updatePassword(newPassword);
+      setPasswordUpdated(true);
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      // After 2 seconds, close the form and navigate to dashboard
+      setTimeout(() => {
+        setShowResetPasswordForm(false);
+        setPasswordUpdated(false);
+        navigateTo('dashboard');
+      }, 2000);
+    } catch (error: any) {
+      console.error('Password update error:', error);
+      alert(error.message || 'Failed to update password');
+    }
+  };
+
 
   const handleLogout = async () => {
     try {
@@ -1010,6 +1083,25 @@ export default function ExpenseSplitApp() {
     );
   }
 
+  // Reset Password View (from email link)
+  if (showResetPasswordForm) {
+    return (
+      <>
+        <ResetPasswordView
+          isDarkTheme={isDarkTheme}
+          toggleTheme={toggleTheme}
+          newPassword={newPassword}
+          setNewPassword={setNewPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          handleUpdatePassword={handleUpdatePassword}
+          passwordUpdated={passwordUpdated}
+        />
+        <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
+      </>
+    );
+  }
+
   // Login/Signup View
   if (view === 'login') {
     return (
@@ -1029,6 +1121,10 @@ export default function ExpenseSplitApp() {
           emailVerificationSent={emailVerificationSent}
           handleAuth={handleAuth}
           handleGoogleSignIn={handleGoogleSignIn}
+          handleForgotPassword={handleForgotPassword}
+          showForgotPassword={showForgotPassword}
+          setShowForgotPassword={setShowForgotPassword}
+          resetPasswordSent={resetPasswordSent}
         />
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>

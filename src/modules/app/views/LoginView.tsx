@@ -17,6 +17,10 @@ interface LoginViewProps {
   emailVerificationSent: boolean;
   handleAuth: () => void;
   handleGoogleSignIn: () => void;
+  handleForgotPassword: () => void;
+  showForgotPassword: boolean;
+  setShowForgotPassword: (value: boolean) => void;
+  resetPasswordSent: boolean;
 }
 
 export function LoginView(props: LoginViewProps) {
@@ -36,6 +40,10 @@ export function LoginView(props: LoginViewProps) {
     emailVerificationSent,
     handleAuth,
     handleGoogleSignIn,
+    handleForgotPassword,
+    showForgotPassword,
+    setShowForgotPassword,
+    resetPasswordSent,
   } = props;
 
   return (
@@ -132,6 +140,18 @@ export function LoginView(props: LoginViewProps) {
             }`}
           />
 
+          {!isSignUp && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className={`text-sm hover:underline ${isDarkTheme ? 'text-cyan-400' : 'text-teal-500'}`}
+              >
+                {t('auth.forgotPassword')}
+              </button>
+            </div>
+          )}
+
           {emailVerificationSent && (
             <div
               className={`p-3 border rounded-lg ${
@@ -214,6 +234,85 @@ export function LoginView(props: LoginViewProps) {
           </p>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div
+            className={`rounded-lg shadow-2xl p-6 w-full max-w-md ${
+              isDarkTheme
+                ? 'bg-gradient-to-br from-gray-900 to-gray-800 border border-cyan-500/30'
+                : 'bg-white'
+            }`}
+          >
+            <h2
+              className={`text-2xl font-bold mb-4 ${
+                isDarkTheme
+                  ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
+                  : 'text-gray-800'
+              }`}
+            >
+              {t('auth.resetPassword')}
+            </h2>
+            <p className={`mb-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+              {t('auth.resetPasswordDescription')}
+            </p>
+
+            {resetPasswordSent ? (
+              <div
+                className={`p-3 border rounded-lg mb-4 ${
+                  isDarkTheme
+                    ? 'bg-cyan-900/30 border-cyan-500/50 text-cyan-200'
+                    : 'bg-blue-50 border-blue-200 text-blue-800'
+                }`}
+              >
+                <p className="text-sm">
+                  📧 {t('auth.resetLinkSent')}
+                </p>
+              </div>
+            ) : (
+              <input
+                type="email"
+                placeholder={t('auth.email')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent mb-4 ${
+                  isDarkTheme
+                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:ring-cyan-500'
+                    : 'border-gray-300 focus:ring-teal-500'
+                }`}
+              />
+            )}
+
+            <div className="flex gap-3">
+              {!resetPasswordSent && (
+                <button
+                  onClick={handleForgotPassword}
+                  className={`flex-1 py-2 rounded-lg transition font-semibold ${
+                    isDarkTheme
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white'
+                      : 'bg-teal-500 hover:bg-teal-600 text-white'
+                  }`}
+                >
+                  {t('auth.sendResetLink')}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                }}
+                className={`${resetPasswordSent ? 'flex-1' : 'flex-1'} py-2 rounded-lg transition font-semibold ${
+                  isDarkTheme
+                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                }`}
+              >
+                {resetPasswordSent ? t('auth.backToLogin') : t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
