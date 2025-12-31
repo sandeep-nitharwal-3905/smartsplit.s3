@@ -1,5 +1,4 @@
 import { Copy, LogOut, Plus, Share2, Trash2, Users } from 'lucide-react';
-import { useMemo } from 'react';
 import type { Expense, Group, User } from '../types';
 
 interface GroupDetailViewProps {
@@ -52,16 +51,6 @@ export function GroupDetailView(props: GroupDetailViewProps) {
     setEditGroupName,
     onRenameGroup,
   } = props;
-
-  // Helper to detect settlement-only expenses created via "Settle Up"
-  const isSettlementExpense = (expense: Expense) => {
-    if (expense.isSettlement) return true;
-
-    const desc = expense.description?.trim().toLowerCase() || '';
-    // Treat as a settlement only when it matches the exact prefix
-    // pattern we generate in handleSettleUp (e.g. "Settlement: A paid B")
-    return desc.startsWith('settlement:') || desc.startsWith('settle up:');
-  };
 
   // Only show balances that involve the current user (either owes or will receive)
   const balanceEntries = Object.entries(balances);
