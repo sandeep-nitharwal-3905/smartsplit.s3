@@ -116,7 +116,7 @@ export function AddGroupView(props: AddGroupViewProps) {
             {friends.length === 0 && (
               <div className={`p-3 border rounded-lg ${isDarkTheme ? 'bg-blue-900/20 border-blue-500/30' : 'bg-blue-50 border-blue-200'}`}>
                 <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'}`}>
-                  💡 Tip: Add friends first to quickly add them to groups. You can add members after creating the group too!
+                  {t('addGroup.addFriendsTip')}
                 </p>
               </div>
             )}

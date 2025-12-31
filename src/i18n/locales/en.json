@@ -108,7 +108,13 @@
     "join": "Join",
     "sendFeedback": "Send Feedback",
     "adminPanel": "Admin Panel",
-    "members": "members"
+    "members": "members",
+    "welcomeTitle": "👋 Welcome to SmartSplit!",
+    "welcomeDescription": "Get started by creating a group or joining an existing one:",
+    "createGroupLabel": "Create Group:",
+    "createGroupDesc": "Perfect for roommates, trips, or shared expenses",
+    "joinGroupLabel": "Join Group:",
+    "joinGroupDesc": "Someone shared a group link with you? Join here!"
   },
   "group": {
     "groupDetails": "Group Details",
@@ -174,7 +180,8 @@
     "selectMembers": "Add Members",
     "selectMembersDesc": "Select friends to add to this group:",
     "create": "Create Group",
-    "groupCreated": "Group created successfully!"
+    "groupCreated": "Group created successfully!",
+    "addFriendsTip": "💡 Tip: Add friends first to quickly add them to groups. You can add members after creating the group too!"
   },
   "manageMembers": {
     "manageMembers": "Manage Members",

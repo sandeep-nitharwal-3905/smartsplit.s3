@@ -152,19 +152,19 @@ export function DashboardView(props: DashboardViewProps) {
                 isDarkTheme ? 'text-cyan-300' : 'text-blue-900'
               }`}
             >
-              👋 Welcome to SmartSplit!
+              {t('dashboard.welcomeTitle')}
             </h3>
             <p
               className={`text-xs sm:text-sm mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-cyan-200' : 'text-blue-800'}`}
             >
-              Get started by creating a group or joining an existing one:
+              {t('dashboard.welcomeDescription')}
             </p>
             <ul className={`text-xs sm:text-sm space-y-1 ml-4 list-disc ${isDarkTheme ? 'text-cyan-100' : 'text-blue-700'}`}>
               <li>
-                <strong>Create Group:</strong> Perfect for roommates, trips, or shared expenses
+                <strong>{t('dashboard.createGroupLabel')}</strong> {t('dashboard.createGroupDesc')}
               </li>
               <li>
-                <strong>Join Group:</strong> Someone shared a group link with you? Join here!
+                <strong>{t('dashboard.joinGroupLabel')}</strong> {t('dashboard.joinGroupDesc')}
               </li>
             </ul>
           </div>
