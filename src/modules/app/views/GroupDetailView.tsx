@@ -1,5 +1,5 @@
 import { Copy, LogOut, Plus, Share2, Trash2, Users } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Expense, Group, User } from '../types';
 
 interface GroupDetailViewProps {
@@ -62,15 +62,6 @@ export function GroupDetailView(props: GroupDetailViewProps) {
     // pattern we generate in handleSettleUp (e.g. "Settlement: A paid B")
     return desc.startsWith('settlement:') || desc.startsWith('settle up:');
   };
-
-  // Calculate total expenses for this group (excluding settlements) - memoized
-  const totalGroupExpenses = useMemo(
-    () =>
-      expenses
-        .filter((expense) => !isSettlementExpense(expense))
-        .reduce((sum, expense) => sum + Number(expense.amount), 0),
-    [expenses]
-  );
 
   // Only show balances that involve the current user (either owes or will receive)
   const balanceEntries = Object.entries(balances);
