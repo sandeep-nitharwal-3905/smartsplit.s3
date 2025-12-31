@@ -1,7 +1,4 @@
-import { useState } from 'react';
 import type { Group, User } from '../types';
-import { SupportModal } from '../components/SupportModal';
-import { Heart } from 'lucide-react';
 
 interface AddExpenseViewProps {
   isDarkTheme: boolean;
@@ -51,8 +48,6 @@ export function AddExpenseView(props: AddExpenseViewProps) {
     setCustomSplits,
     handleAddExpense,
   } = props;
-
-  const [showSupportModal, setShowSupportModal] = useState(false);
 
   let availableMembers: User[] = [];
 
@@ -347,24 +342,6 @@ export function AddExpenseView(props: AddExpenseViewProps) {
             </div>
 
             {/* Support Message */}
-            <div
-              className={`p-3 rounded-lg border ${
-                isDarkTheme
-                  ? 'bg-gradient-to-r from-pink-900/30 to-red-900/30 border-pink-700'
-                  : 'bg-gradient-to-r from-pink-50 to-red-50 border-pink-200'
-              }`}
-            >
-              <button
-                onClick={() => setShowSupportModal(true)}
-                className={`w-full flex items-center justify-center gap-2 text-sm ${
-                  isDarkTheme ? 'text-pink-300 hover:text-pink-200' : 'text-pink-700 hover:text-pink-800'
-                } transition`}
-              >
-                <Heart className="w-4 h-4 fill-current" />
-                <span>Like tracking expenses? Support us to keep SmartSplit free!</span>
-              </button>
-            </div>
-
             <button
               onClick={handleAddExpense}
               disabled={selectedParticipants.length === 0}
@@ -391,14 +368,6 @@ export function AddExpenseView(props: AddExpenseViewProps) {
             )}
           </div>
         </div>
-
-        {/* Support Modal */}
-        <SupportModal
-          isDarkTheme={isDarkTheme}
-          isOpen={showSupportModal}
-          onClose={() => setShowSupportModal(false)}
-          context="expense"
-        />
       </div>
     </div>
   );

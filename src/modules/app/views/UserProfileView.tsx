@@ -1,7 +1,6 @@
-import { ArrowLeft, Mail, User as UserIcon, Save, Heart } from 'lucide-react';
+import { ArrowLeft, Mail, User as UserIcon, Save } from 'lucide-react';
 import { useState } from 'react';
 import type { User } from '../types';
-import { SupportModal } from '../components/SupportModal';
 
 interface UserProfileViewProps {
   isDarkTheme: boolean;
@@ -19,7 +18,6 @@ export function UserProfileView({
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(currentUser?.name || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -207,32 +205,9 @@ export function UserProfileView({
                 </button>
               )}
             </div>
-
-            {/* Support Button */}
-            <div className="pt-3">
-              <button
-                onClick={() => setShowSupportModal(true)}
-                className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition ${
-                  isDarkTheme
-                    ? 'bg-gradient-to-r from-pink-600 to-red-600 hover:from-pink-700 hover:to-red-700'
-                    : 'bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600'
-                } text-white`}
-              >
-                <Heart className="w-5 h-5 fill-current" />
-                Support Us
-              </button>
-            </div>
           </div>
         </div>
       </div>
-
-      {/* Support Modal */}
-      <SupportModal
-        isDarkTheme={isDarkTheme}
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-        context="profile"
-      />
     </div>
   );
 }
