@@ -1,5 +1,6 @@
 import { ArrowLeft, Mail, User as UserIcon, Save } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { User } from '../types';
 
 interface UserProfileViewProps {
@@ -15,6 +16,7 @@ export function UserProfileView({
   setView,
   onUpdateProfile,
 }: UserProfileViewProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(currentUser?.name || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -54,7 +56,7 @@ export function UserProfileView({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg sm:text-2xl font-bold">My Profile</h1>
+          <h1 className="text-lg sm:text-2xl font-bold">{t('profile.userProfile')}</h1>
         </div>
       </nav>
 
@@ -87,7 +89,7 @@ export function UserProfileView({
                 }`}
               >
                 <UserIcon className="w-4 h-4 inline mr-2" />
-                Name
+                {t('profile.name')}
               </label>
               {isEditing ? (
                 <input
@@ -122,7 +124,7 @@ export function UserProfileView({
                 }`}
               >
                 <Mail className="w-4 h-4 inline mr-2" />
-                Email
+                {t('profile.email')}
               </label>
               <div
                 className={`p-3 rounded-lg ${

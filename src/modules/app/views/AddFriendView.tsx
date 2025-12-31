@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { User } from '../types';
 
 interface AddFriendViewProps {
@@ -10,6 +11,7 @@ interface AddFriendViewProps {
 }
 
 export function AddFriendView(props: AddFriendViewProps) {
+  const { t } = useTranslation();
   const { isDarkTheme, friendEmail, setFriendEmail, handleAddFriend, friends, onBack } = props;
 
   return (
@@ -21,9 +23,9 @@ export function AddFriendView(props: AddFriendViewProps) {
       >
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
           <button onClick={onBack} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
-            ← Back
+            ← {t('common.back')}
           </button>
-          <h1 className="text-lg sm:text-2xl font-bold">Manage Friends</h1>
+          <h1 className="text-lg sm:text-2xl font-bold">{t('friend.addFriend')}</h1>
         </div>
       </nav>
 
@@ -43,7 +45,7 @@ export function AddFriendView(props: AddFriendViewProps) {
           <div className="space-y-3 sm:space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                Add Friend by Email
+                {t('friend.friendEmail')}
               </label>
               <input
                 type="email"
@@ -67,17 +69,17 @@ export function AddFriendView(props: AddFriendViewProps) {
                   : 'bg-teal-500 text-white hover:bg-teal-600'
               }`}
             >
-              Add Friend
+              {t('friend.addFriend')}
             </button>
           </div>
 
           <div className="mt-4 sm:mt-6">
             <h3 className={`font-semibold mb-2 sm:mb-3 text-sm sm:text-base ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-              Your Friends
+              {t('dashboard.myFriends')}
             </h3>
             {friends.length === 0 ? (
               <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
-                No friends added yet.
+                {t('dashboard.noFriends')}
               </p>
             ) : (
               <div className="space-y-1.5 sm:space-y-2">

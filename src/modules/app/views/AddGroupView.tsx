@@ -1,4 +1,5 @@
 import { Copy, Share2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { User } from '../types';
 
 interface AddGroupViewProps {
@@ -19,6 +20,7 @@ interface AddGroupViewProps {
 }
 
 export function AddGroupView(props: AddGroupViewProps) {
+  const { t } = useTranslation();
   const {
     isDarkTheme,
     groupName,
@@ -45,9 +47,9 @@ export function AddGroupView(props: AddGroupViewProps) {
       >
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
           <button onClick={onBack} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
-            ← Back
+            ← {t('common.back')}
           </button>
-          <h1 className="text-lg sm:text-2xl font-bold">Create New Group</h1>
+          <h1 className="text-lg sm:text-2xl font-bold">{t('addGroup.createGroup')}</h1>
         </div>
       </nav>
 
@@ -56,7 +58,7 @@ export function AddGroupView(props: AddGroupViewProps) {
           <div className="space-y-4">
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                Group Name
+                {t('addGroup.groupName')}
               </label>
               <input
                 type="text"
@@ -74,10 +76,10 @@ export function AddGroupView(props: AddGroupViewProps) {
             {friends.length > 0 && (
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                  Add Members (Optional)
+                  {t('addGroup.selectMembers')} ({t('common.optional')})
                 </label>
                 <p className={`text-xs mb-2 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Select friends to add to this group:
+                  {t('addGroup.selectMembersDesc')}
                 </p>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {friends.map((friend) => {
@@ -127,7 +129,7 @@ export function AddGroupView(props: AddGroupViewProps) {
                   : 'bg-teal-500 text-white hover:bg-teal-600'
               }`}
             >
-              Create Group
+              {t('addGroup.create')}
             </button>
           </div>
         </div>
@@ -156,7 +158,7 @@ export function AddGroupView(props: AddGroupViewProps) {
                 </svg>
               </div>
               <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                Group Created!
+                {t('addGroup.groupCreated')}
               </h2>
               <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                 Share this group with others to start splitting expenses
@@ -171,7 +173,7 @@ export function AddGroupView(props: AddGroupViewProps) {
                 }`}
               >
                 <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                Share Group Link
+                {t('group.copyLink')}
               </button>
 
               <button
@@ -181,7 +183,7 @@ export function AddGroupView(props: AddGroupViewProps) {
                 }`}
               >
                 <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
-                Copy Group ID
+                {t('group.copyId')}
               </button>
 
               <button
@@ -195,7 +197,7 @@ export function AddGroupView(props: AddGroupViewProps) {
                     : 'bg-teal-500 text-white hover:bg-teal-600'
                 }`}
               >
-                Go to Dashboard
+                Go to {t('dashboard.title')}
               </button>
             </div>
           </div>

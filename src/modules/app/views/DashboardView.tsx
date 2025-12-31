@@ -1,4 +1,5 @@
 import { ArrowLeftRight, Link as LinkIcon, LogOut, MessageSquare, Moon, Sun, User, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Expense, Group, User as AppUser } from '../types';
 
 interface DashboardViewProps {
@@ -29,6 +30,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView(props: DashboardViewProps) {
+  const { t, i18n } = useTranslation();
   const {
     isDarkTheme,
     toggleTheme,
@@ -68,7 +70,7 @@ export function DashboardView(props: DashboardViewProps) {
         } text-white`}
       >
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-lg sm:text-2xl font-bold">SmartSplit</h1>
+          <h1 className="text-lg sm:text-2xl font-bold">{t('common.appName')}</h1>
           <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={toggleTheme}
@@ -76,6 +78,13 @@ export function DashboardView(props: DashboardViewProps) {
               title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDarkTheme ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+            </button>
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en')}
+              className={`px-2 py-1 rounded transition text-xs font-semibold ${isDarkTheme ? 'hover:bg-cyan-700 bg-cyan-600' : 'hover:bg-teal-600 bg-teal-400'}`}
+              title="Change Language / भाषा बदलें"
+            >
+              {i18n.language === 'en' ? 'हि' : 'EN'}
             </button>
             <button
               onClick={() => setView('profile')}
@@ -111,7 +120,7 @@ export function DashboardView(props: DashboardViewProps) {
           >
             <Users className="w-7 h-7" />
             <div className="text-left">
-              <div className="font-bold text-lg">Create Group</div>
+              <div className="font-bold text-lg">{t('addGroup.createGroup')}</div>
               <div className="text-xs opacity-90">Start splitting expenses</div>
             </div>
           </button>
@@ -126,7 +135,7 @@ export function DashboardView(props: DashboardViewProps) {
           >
             <LinkIcon className="w-7 h-7" />
             <div className="text-left">
-              <div className="font-bold text-lg">Join Group</div>
+              <div className="font-bold text-lg">{t('dashboard.joinGroup')}</div>
               <div className="text-xs opacity-90">Enter group ID or link</div>
             </div>
           </button>
@@ -342,7 +351,7 @@ export function DashboardView(props: DashboardViewProps) {
           )}
           
           <p className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-            Developed & designed with <span className="text-red-500">❤</span> by S3
+            Developed & designed with <span className="text-red-500">❤</span> by S3 (Sandeep Nitharwal)
           </p>
         </div>
       </footer>

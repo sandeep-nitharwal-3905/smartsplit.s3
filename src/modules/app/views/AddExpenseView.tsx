@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Group, User } from '../types';
 
 interface AddExpenseViewProps {
@@ -25,6 +26,7 @@ interface AddExpenseViewProps {
 }
 
 export function AddExpenseView(props: AddExpenseViewProps) {
+  const { t } = useTranslation();
   const {
     isDarkTheme,
     selectedGroup,
@@ -93,9 +95,9 @@ export function AddExpenseView(props: AddExpenseViewProps) {
             onClick={() => (isEditMode ? cancelEditExpense() : setView(selectedGroup ? 'groupDetail' : 'dashboard'))}
             className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}
           >
-            ← Back
+            ← {t('common.back')}
           </button>
-          <h1 className="text-lg sm:text-2xl font-bold">{isEditMode ? 'Edit Expense' : 'Add Expense'}</h1>
+          <h1 className="text-lg sm:text-2xl font-bold">{isEditMode ? t('expense.editExpense') : t('expense.addExpense')}</h1>
         </div>
       </nav>
 
@@ -112,7 +114,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
           <div className="space-y-3 sm:space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                Description
+                {t('expense.expenseDescription')}
               </label>
               <input
                 type="text"
@@ -129,7 +131,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
 
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                Amount (₹)
+                {t('expense.amount')} (₹)
               </label>
               <input
                 type="number"
@@ -147,7 +149,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
 
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                Paid By
+                {t('expense.paidBy')}
               </label>
               <select
                 value={selectedPayer}
@@ -158,7 +160,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                     : 'border-gray-300 focus:ring-teal-500'
                 }`}
               >
-                <option value="">Select payer</option>
+                <option value="">{t('expense.selectPayer')}</option>
                 {availableMembers.map((member) => (
                   <option key={member.id} value={member.id}>
                     {member.id === currentUser?.id ? 'You' : member.name || (member.email ? member.email.split('@')[0] : 'Unknown User')}
@@ -170,7 +172,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
             <div>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
                 <label className={`block text-xs sm:text-sm font-medium ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                  Split Between
+                  {t('expense.splitBetween')}
                 </label>
                 <button
                   onClick={handleSelectAll}
@@ -196,7 +198,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                         : 'text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  Split Equally
+                  {t('expense.splitEqually')}
                 </button>
                 <button
                   onClick={() => setSplitMode('unequal')}
@@ -210,7 +212,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                         : 'text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  Split Unequally
+                  {t('expense.splitUnequally')}
                 </button>
               </div>
 
@@ -355,7 +357,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                     : 'bg-teal-500 text-white hover:bg-teal-600'
               }`}
             >
-              {isEditMode ? 'Update Expense' : 'Add Expense'}
+              {isEditMode ? t('expense.save').replace('Expense', '') : t('expense.addExpense')}
             </button>
 
             {isEditMode && (
@@ -363,7 +365,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                 onClick={cancelEditExpense}
                 className="w-full bg-gray-300 text-gray-700 py-2.5 sm:py-3 rounded-lg hover:bg-gray-400 transition font-semibold text-sm sm:text-base"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             )}
           </div>

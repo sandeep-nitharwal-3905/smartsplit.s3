@@ -1,4 +1,6 @@
 import { ArrowLeft, IndianRupee, Moon, Sun } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../../components/LanguageToggle';
 
 interface LoginViewProps {
   isDarkTheme: boolean;
@@ -18,6 +20,7 @@ interface LoginViewProps {
 }
 
 export function LoginView(props: LoginViewProps) {
+  const { t } = useTranslation();
   const {
     isDarkTheme,
     toggleTheme,
@@ -55,17 +58,20 @@ export function LoginView(props: LoginViewProps) {
         <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
 
-      <button
-        onClick={toggleTheme}
-        className={`fixed top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-3 rounded-full shadow-lg transition-all z-50 ${
-          isDarkTheme
-            ? 'bg-cyan-500 text-gray-900 hover:bg-cyan-400'
-            : 'bg-white text-gray-700 hover:bg-gray-100'
-        }`}
-        title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      >
-        {isDarkTheme ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
-      </button>
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 flex gap-2 z-50">
+        <button
+          onClick={toggleTheme}
+          className={`p-2 sm:p-3 rounded-full shadow-lg transition-all ${
+            isDarkTheme
+              ? 'bg-cyan-500 text-gray-900 hover:bg-cyan-400'
+              : 'bg-white text-gray-700 hover:bg-gray-100'
+          }`}
+          title={t('nav.switchToDark')}
+        >
+          {isDarkTheme ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+        </button>
+        <LanguageToggle isDarkTheme={isDarkTheme} />
+      </div>
 
       <div
         className={`rounded-lg shadow-2xl p-4 sm:p-8 w-full max-w-md ${
@@ -83,16 +89,16 @@ export function LoginView(props: LoginViewProps) {
                 : 'text-gray-800'
             }`}
           >
-            SmartSplit
+            {t('common.appName')}
           </h1>
-          <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>Split expenses with friends</p>
+          <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>{t('auth.tagline')}</p>
         </div>
 
         <div className="space-y-4">
           {isSignUp && (
             <input
               type="text"
-              placeholder="Full Name"
+              placeholder={t('auth.fullName')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
@@ -104,7 +110,7 @@ export function LoginView(props: LoginViewProps) {
           )}
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t('auth.email')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
@@ -115,7 +121,7 @@ export function LoginView(props: LoginViewProps) {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t('auth.password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAuth()}
@@ -135,8 +141,7 @@ export function LoginView(props: LoginViewProps) {
               }`}
             >
               <p className="text-sm">
-                📧 Verification email sent! Please check your inbox or spam folder and verify your email before
-                logging in.
+                📧 {t('auth.verificationSent')}
               </p>
             </div>
           )}
@@ -149,7 +154,7 @@ export function LoginView(props: LoginViewProps) {
                 : 'bg-teal-500 hover:bg-teal-600 text-white'
             }`}
           >
-            {isSignUp ? 'Sign Up' : 'Log In'}
+            {isSignUp ? t('auth.signup') : t('auth.login')}
           </button>
 
           <div className="relative">
@@ -189,23 +194,23 @@ export function LoginView(props: LoginViewProps) {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {isSignUp ? t('auth.signUpWithGoogle') : t('auth.signInWithGoogle')}
           </button>
         </div>
 
         <p className={`text-center mt-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+          {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.dontHaveAccount')}
           <button
             onClick={() => setIsSignUp(!isSignUp)}
             className={`ml-2 font-semibold hover:underline ${isDarkTheme ? 'text-cyan-400' : 'text-teal-500'}`}
           >
-            {isSignUp ? 'Log In' : 'Sign Up'}
+            {isSignUp ? t('auth.signInHere') : t('auth.signUpHere')}
           </button>
         </p>
 
         <div className={`text-center mt-6 pt-4 border-t ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'}`}>
           <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-            Developed & designed with <span className="text-red-500">❤</span> by S3
+            Developed & designed with <span className="text-red-500">❤</span> by S3 (Sandeep Nitharwal)
           </p>
         </div>
       </div>

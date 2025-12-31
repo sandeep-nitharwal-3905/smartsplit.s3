@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Users, 
   IndianRupee, 
@@ -15,6 +16,7 @@ import {
   Smartphone,
   BarChart3
 } from 'lucide-react';
+import { LanguageToggle } from './LanguageToggle';
 
 interface HomePageProps {
   onGetStarted: () => void;
@@ -22,6 +24,7 @@ interface HomePageProps {
 
 export default function HomePage({ onGetStarted }: HomePageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-blue-50">
@@ -32,20 +35,21 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
             <div className="flex items-center gap-2">
               <img src="/logo.png" alt="SmartSplit Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
-                SmartSplit
+                {t('common.appName')}
               </span>
             </div>
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-700 hover:text-teal-600 transition-colors">Features</a>
-              <a href="#how-it-works" className="text-gray-700 hover:text-teal-600 transition-colors">How It Works</a>
-              <a href="#benefits" className="text-gray-700 hover:text-teal-600 transition-colors">Benefits</a>
+              <a href="#features" className="text-gray-700 hover:text-teal-600 transition-colors">{t('nav.features')}</a>
+              <a href="#how-it-works" className="text-gray-700 hover:text-teal-600 transition-colors">{t('nav.howItWorks')}</a>
+              <a href="#benefits" className="text-gray-700 hover:text-teal-600 transition-colors">{t('nav.benefits')}</a>
+              <LanguageToggle className="" />
               <button 
                 onClick={onGetStarted}
                 className="bg-gradient-to-r from-teal-500 to-blue-500 text-white px-6 py-2 rounded-full hover:from-teal-600 hover:to-blue-600 transition-all shadow-lg hover:shadow-xl"
               >
-                Get Started Free
+                {t('nav.getStarted')}
               </button>
             </div>
 
@@ -61,14 +65,15 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden py-4 space-y-3">
-              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">Features</a>
-              <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">How It Works</a>
-              <a href="#benefits" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">Benefits</a>
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">{t('nav.features')}</a>
+              <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">{t('nav.howItWorks')}</a>
+              <a href="#benefits" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">{t('nav.benefits')}</a>
+              <LanguageToggle className="w-full justify-center" />
               <button 
                 onClick={onGetStarted}
                 className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white px-6 py-2 rounded-full hover:from-teal-600 hover:to-blue-600 transition-all"
               >
-                Get Started Free
+                {t('nav.getStarted')}
               </button>
             </div>
           )}
@@ -82,20 +87,18 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold">
                 <Star className="w-4 h-4 fill-current" />
-                Trusted by 10,000+ Users
+                {t('home.tagline')}
               </div>
               
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
-                Split Bills & Track Expenses{' '}
+                {t('home.heroTitle')}{' '}
                 <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
-                  Effortlessly
+                  {t('home.heroHighlight')}
                 </span>
               </h1>
               
               <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
-                Stop the awkward money conversations. SmartSplit makes splitting bills with friends, 
-                roommates, and groups as simple as a few taps. Track who owes what, settle up instantly, 
-                and keep your friendships drama-free.
+                {t('home.heroDescription')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -103,11 +106,11 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                   onClick={onGetStarted}
                   className="bg-gradient-to-r from-teal-500 to-blue-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-teal-600 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group"
                 >
-                  Start Splitting Now
+                  {t('home.startSplitting')}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-full text-lg font-semibold hover:border-teal-500 hover:text-teal-600 transition-all">
-                  Watch Demo
+                  {t('home.learnMore')}
                 </button>
               </div>
 
@@ -144,7 +147,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Split Smart
+              {t('home.featuresTitle')}
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Powerful features designed to make expense sharing simple, fair, and transparent
@@ -156,9 +159,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-14 h-14 bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl flex items-center justify-center mb-4">
                 <Users className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Group Expenses</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('features.groupExpenses')}</h3>
               <p className="text-gray-600">
-                Create groups for roommates, trips, events, or any shared expenses. Keep everyone in sync effortlessly.
+                {t('features.groupExpensesDesc')}
               </p>
             </div>
 
@@ -166,9 +169,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mb-4">
                 <IndianRupee className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Smart Splitting</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('features.smartSplit')}</h3>
               <p className="text-gray-600">
-                Split equally, by percentage, or custom amounts. SmartSplit calculates who owes what automatically.
+                {t('features.smartSplitDesc')}
               </p>
             </div>
 
@@ -186,9 +189,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-14 h-14 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Secure & Private</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('features.secureData')}</h3>
               <p className="text-gray-600">
-                Your financial data is encrypted and secure. We never share your information with third parties.
+                {t('features.secureDataDesc')}
               </p>
             </div>
 
@@ -206,9 +209,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-14 h-14 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mb-4">
                 <Globe className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Multi-Currency</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('features.multiCurrency')}</h3>
               <p className="text-gray-600">
-                Support for Indian Rupees and multiple currencies. Perfect for international trips.
+                {t('features.multiCurrencyDesc')}
               </p>
             </div>
           </div>
@@ -220,7 +223,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              How SmartSplit Works
+              {t('home.howItWorksTitle')}
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Get started in three simple steps
@@ -232,9 +235,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-teal-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl sm:text-3xl font-bold">
                 1
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Create a Group</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">{t('howItWorks.step1')}</h3>
               <p className="text-gray-600 text-base sm:text-lg">
-                Add your friends, roommates, or trip buddies to a group in seconds.
+                {t('howItWorks.step1Desc')}
               </p>
               <div className="mt-6">
                 <img 
@@ -249,9 +252,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl sm:text-3xl font-bold">
                 2
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Add Expenses</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">{t('howItWorks.step2')}</h3>
               <p className="text-gray-600 text-base sm:text-lg">
-                Log expenses as they happen. Split equally or customize who owes what.
+                {t('howItWorks.step2Desc')}
               </p>
               <div className="mt-6">
                 <img 
@@ -266,9 +269,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl sm:text-3xl font-bold">
                 3
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Settle Up</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">{t('howItWorks.step3')}</h3>
               <p className="text-gray-600 text-base sm:text-lg">
-                View balances and settle debts. SmartSplit shows the simplest way to square up.
+                {t('howItWorks.step3Desc')}
               </p>
               <div className="mt-6">
                 <img 
@@ -288,7 +291,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
           <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-                Why Choose SmartSplit?
+                {t('home.whyChooseTitle')}
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -357,16 +360,16 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
       <section className="py-16 sm:py-20 bg-gradient-to-r from-teal-600 to-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
-            Ready to Simplify Your Shared Expenses?
+            {t('home.readyToStart')}
           </h2>
           <p className="text-lg sm:text-xl text-teal-100 mb-6 sm:mb-8">
-            Join thousands of users who trust SmartSplit for hassle-free expense splitting
+            {t('home.joinToday')}
           </p>
           <button 
             onClick={onGetStarted}
             className="bg-white text-teal-600 px-8 sm:px-10 py-3 sm:py-4 rounded-full text-base sm:text-lg font-bold hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl inline-flex items-center gap-2 group"
           >
-            Get Started Free
+            {t('nav.getStarted')}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="text-sm sm:text-base text-teal-100 mt-4">
@@ -382,7 +385,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <img src="/logo.png" alt="SmartSplit Logo" className="h-8 w-8" />
-                <span className="text-xl font-bold text-white">SmartSplit</span>
+                <span className="text-xl font-bold text-white">{t('common.appName')}</span>
               </div>
               <p className="text-gray-400">
                 Making expense splitting simple, fair, and transparent for everyone.
@@ -392,9 +395,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
             <div>
               <h3 className="text-white font-bold mb-4">Product</h3>
               <ul className="space-y-2">
-                <li><a href="#features" className="hover:text-teal-400 transition-colors">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-teal-400 transition-colors">How It Works</a></li>
-                <li><a href="#benefits" className="hover:text-teal-400 transition-colors">Benefits</a></li>
+                <li><a href="#features" className="hover:text-teal-400 transition-colors">{t('nav.features')}</a></li>
+                <li><a href="#how-it-works" className="hover:text-teal-400 transition-colors">{t('nav.howItWorks')}</a></li>
+                <li><a href="#benefits" className="hover:text-teal-400 transition-colors">{t('nav.benefits')}</a></li>
               </ul>
             </div>
             
@@ -419,7 +422,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2025 SmartSplit. All rights reserved.</p>
-            <p>Developed & designed with <span className="text-red-500">❤</span> by S3</p>
+            <p>Developed & designed with <span className="text-red-500">❤</span> by S3 (Sandeep Nitharwal)</p>
           </div>
         </div>
       </footer>

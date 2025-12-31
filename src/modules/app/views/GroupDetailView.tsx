@@ -1,4 +1,5 @@
 import { Copy, LogOut, Plus, Share2, Trash2, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Expense, Group, User } from '../types';
 
 interface GroupDetailViewProps {
@@ -27,6 +28,7 @@ interface GroupDetailViewProps {
 }
 
 export function GroupDetailView(props: GroupDetailViewProps) {
+  const { t } = useTranslation();
   const {
     isDarkTheme,
     currentUser,
@@ -73,7 +75,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2 sm:gap-4 flex-1">
             <button onClick={onBack} className={`p-2 rounded ${isDarkTheme ? 'hover:bg-cyan-700' : 'hover:bg-teal-600'}`}>
-              ← Back
+              ← {t('common.back')}
             </button>
             {isEditingGroupName ? (
               <div className="flex items-center gap-2 flex-1 max-w-md">
@@ -147,7 +149,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
             }`}
           >
             <Plus className="w-5 h-5" />
-            Add Expense
+            {t('expense.addExpense')}
           </button>
 
           <button
@@ -200,7 +202,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div className={`rounded-lg shadow p-3 sm:p-4 md:p-6 ${isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
             <h2 className={`text-lg sm:text-xl font-bold mb-3 sm:mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-              Group Balances
+              {t('group.balances')}
             </h2>
             {userBalanceEntries.length === 0 ? (
               <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>All settled up!</p>
@@ -213,7 +215,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
                     <div key={key} className={`p-2.5 sm:p-3 rounded ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-50'}`}>
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
                         <span className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {getUserName(fromId)} owes {getUserName(toId)}
+                          {getUserName(fromId)} {fromId === currentUser?.id ? t('dashboard.youOwe') : t('dashboard.owesYou')} {getUserName(toId)}
                         </span>
                         <span className={`font-bold text-sm sm:text-base ${isDarkTheme ? 'text-cyan-400' : 'text-teal-600'}`}>
                           ₹{amount.toFixed(2)}
@@ -228,7 +230,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
                               : 'bg-green-500 text-white hover:bg-green-600'
                           }`}
                         >
-                          Settle Up
+                          {t('dashboard.settleUp')}
                         </button>
                       )}
                     </div>
@@ -239,9 +241,9 @@ export function GroupDetailView(props: GroupDetailViewProps) {
           </div>
 
           <div className={`rounded-lg shadow p-6 ${isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
-            <h2 className={`text-xl font-bold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Recent Expenses</h2>
+            <h2 className={`text-xl font-bold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{t('dashboard.recentActivity')}</h2>
             {expenses.length === 0 ? (
-              <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-500'}>No expenses yet.</p>
+              <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-500'}>{t('dashboard.noExpenses')}</p>
             ) : (
               <div className="space-y-2">
                 {expenses.map((expense) => {
@@ -269,7 +271,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
                               isDarkTheme ? 'text-gray-400' : 'text-gray-600'
                             }`}
                           >
-                            <span>Paid by {getUserName(expense.paidBy)}</span>
+                            <span>{t('group.paidBy')} {getUserName(expense.paidBy)}</span>
                             <span className="hidden sm:inline">•</span>
                             <span className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-500' : 'text-gray-500'}`}>
                               {formatDateTime(expense.createdAt)}
@@ -280,23 +282,23 @@ export function GroupDetailView(props: GroupDetailViewProps) {
                             {isPayer ? (
                               <div className="text-xs sm:text-sm">
                                 <span className={`font-medium ${isDarkTheme ? 'text-green-400' : 'text-green-600'}`}>
-                                  You paid: ₹{expense.amount.toFixed(2)}
+                                  {t('expense.youPaid')}: ₹{expense.amount.toFixed(2)}
                                 </span>
                                 {expense.participants.length > 1 && (
                                   <span className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>
                                     {' '}
-                                    (Your share: ₹{userShare.toFixed(2)})
+                                    ({t('expense.yourShare')}: ₹{userShare.toFixed(2)})
                                   </span>
                                 )}
                               </div>
                             ) : (
                               <div className="text-xs sm:text-sm">
                                 <span className={`font-medium ${isDarkTheme ? 'text-orange-400' : 'text-orange-600'}`}>
-                                  Your share: ₹{userShare.toFixed(2)}
+                                  {t('expense.yourShare')}: ₹{userShare.toFixed(2)}
                                 </span>
                                 <span className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>
                                   {' '}
-                                  of ₹{expense.amount.toFixed(2)}
+                                  {t('expense.of')} ₹{expense.amount.toFixed(2)}
                                 </span>
                               </div>
                             )}
@@ -304,7 +306,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
 
                           {expense.splitAmounts && (
                             <div className={`mt-1 text-xs ${isDarkTheme ? 'text-gray-500' : 'text-gray-500'}`}>
-                              <span className="font-medium">Custom split:</span>
+                              <span className="font-medium">{t('expense.customSplit')}:</span>
                               <span className="block sm:inline">
                                 {expense.participants.map((pId, idx) => (
                                   <span key={pId}>
