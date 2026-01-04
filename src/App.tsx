@@ -1328,6 +1328,7 @@ export default function ExpenseSplitApp() {
             setIsEditingGroupName(false);
             setEditGroupName('');
           }}
+          setFriends={setFriends}
           tempMemberEmail={tempMemberEmail}
           setTempMemberEmail={setTempMemberEmail}
           getUserByEmail={getUserByEmail}

@@ -213,7 +213,10 @@
     "confirmRemove": "Remove this member from the group?",
     "removeMember": "Remove",
     "memberRemoved": "Member removed successfully!",
-    "removeMemberError": "Failed to remove member. Please try again."
+    "removeMemberError": "Failed to remove member. Please try again.",
+    "addFriend": "Add Friend",
+    "friendAdded": "Friend added successfully!",
+    "addFriendError": "Failed to add friend. Please try again."
   },
   "feedback": {
     "sendFeedback": "Send Feedback",

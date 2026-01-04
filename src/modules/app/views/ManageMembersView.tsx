@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Group, User } from '../types';
 import { removeMemberFromGroup } from '../../data/groups';
+import { addFriend } from '../../data/friends';
 
 interface ManageMembersViewProps {
   isDarkTheme: boolean;
@@ -12,6 +13,7 @@ interface ManageMembersViewProps {
   groups: Group[];
   setGroups: (groups: Group[]) => void;
   setSelectedGroup: (group: Group) => void;
+  setFriends: (friends: User[]) => void;
   tempMemberEmail: string;
   setTempMemberEmail: (value: string) => void;
   getUserByEmail: (email: string) => Promise<User | null>;
@@ -31,6 +33,7 @@ export function ManageMembersView(props: ManageMembersViewProps) {
     groups,
     setGroups,
     setSelectedGroup,
+    setFriends,
     tempMemberEmail,
     setTempMemberEmail,
     getUserByEmail,
@@ -226,27 +229,51 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                       </p>
                       <p className={`text-xs truncate ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>{member.email}</p>
                     </div>
-                    {!isCreator && selectedGroup.createdBy === currentUser?.id && (
-                      <button
-                        onClick={async () => {
-                          if (confirm(t('members.confirmRemove'))) {
+                    <div className="flex gap-2 flex-shrink-0">
+                      {!isCurrentUser && !friends.some((f) => f.id === memberId) && (
+                        <button
+                          onClick={async () => {
+                            if (!currentUser) return;
                             try {
-                              await removeMemberFromGroup(selectedGroup.id, memberId);
-                              const updatedMembers = selectedGroup.members.filter((id) => id !== memberId);
-                              setSelectedGroup({ ...selectedGroup, members: updatedMembers });
-                              setGroups(groups.map((g) => (g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g)));
-                              alert(t('members.memberRemoved'));
+                              await addFriend(currentUser.id, memberId);
+                              setFriends([...friends, member as User]);
+                              alert(t('members.friendAdded'));
                             } catch (error) {
-                              console.error('Error removing member:', error);
-                              alert(t('members.removeMemberError'));
+                              console.error('Error adding friend:', error);
+                              alert(t('members.addFriendError'));
                             }
-                          }
-                        }}
-                        className="text-red-500 text-xs sm:text-sm font-medium hover:text-red-700 flex-shrink-0"
-                      >
-                        {t('members.removeMember')}
-                      </button>
-                    )}
+                          }}
+                          className={`text-xs sm:text-sm font-medium px-2 py-1 rounded transition ${
+                            isDarkTheme
+                              ? 'text-cyan-400 border border-cyan-500 hover:bg-cyan-900'
+                              : 'text-teal-600 border border-teal-500 hover:bg-teal-50'
+                          }`}
+                        >
+                          {t('members.addFriend')}
+                        </button>
+                      )}
+                      {!isCreator && selectedGroup.createdBy === currentUser?.id && (
+                        <button
+                          onClick={async () => {
+                            if (confirm(t('members.confirmRemove'))) {
+                              try {
+                                await removeMemberFromGroup(selectedGroup.id, memberId);
+                                const updatedMembers = selectedGroup.members.filter((id) => id !== memberId);
+                                setSelectedGroup({ ...selectedGroup, members: updatedMembers });
+                                setGroups(groups.map((g) => (g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g)));
+                                alert(t('members.memberRemoved'));
+                              } catch (error) {
+                                console.error('Error removing member:', error);
+                                alert(t('members.removeMemberError'));
+                              }
+                            }
+                          }}
+                          className="text-red-500 text-xs sm:text-sm font-medium hover:text-red-700"
+                        >
+                          {t('members.removeMember')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
