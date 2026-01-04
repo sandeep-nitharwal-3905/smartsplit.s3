@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import type { Group, User } from '../types';
+import { removeMemberFromGroup } from '../../data/groups';
 
 interface ManageMembersViewProps {
   isDarkTheme: boolean;
@@ -18,6 +20,7 @@ interface ManageMembersViewProps {
 }
 
 export function ManageMembersView(props: ManageMembersViewProps) {
+  const { t } = useTranslation();
   const {
     isDarkTheme,
     friends,
@@ -116,15 +119,15 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                     try {
                       const user = await getUserByEmail(tempMemberEmail);
                       if (!user) {
-                        alert('User not found');
+                        alert(t('members.userNotFound'));
                         return;
                       }
                       if (user.id === currentUser.id) {
-                        alert('You cannot add yourself');
+                        alert(t('members.cannotAddSelf'));
                         return;
                       }
                       if (selectedGroup.members.includes(user.id)) {
-                        alert('User is already in the group');
+                        alert(t('members.alreadyInGroup'));
                         return;
                       }
                       const updatedMembers = [...selectedGroup.members, user.id];
@@ -136,10 +139,10 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                       setSelectedGroup(updatedGroup);
                       setGroups(groups.map((g) => (g.id === selectedGroup.id ? updatedGroup : g)));
                       setTempMemberEmail('');
-                      alert('Member added successfully!');
+                      alert(t('members.memberAdded'));
                     } catch (error) {
                       console.error('Error adding member:', error);
-                      alert('Failed to add member. Please try again.');
+                      alert(t('members.addMemberError'));
                     }
                   }
                 }}
@@ -156,15 +159,15 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                   try {
                     const user = await getUserByEmail(tempMemberEmail);
                     if (!user) {
-                      alert('User not found');
+                      alert(t('members.userNotFound'));
                       return;
                     }
                     if (user.id === currentUser.id) {
-                      alert('You cannot add yourself');
+                      alert(t('members.cannotAddSelf'));
                       return;
                     }
                     if (selectedGroup.members.includes(user.id)) {
-                      alert('User is already in the group');
+                      alert(t('members.alreadyInGroup'));
                       return;
                     }
                     const updatedMembers = [...selectedGroup.members, user.id];
@@ -176,10 +179,10 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                     setSelectedGroup(updatedGroup);
                     setGroups(groups.map((g) => (g.id === selectedGroup.id ? updatedGroup : g)));
                     setTempMemberEmail('');
-                    alert('Member added successfully!');
+                    alert(t('members.memberAdded'));
                   } catch (error) {
                     console.error('Error adding member:', error);
-                    alert('Failed to add member. Please try again.');
+                    alert(t('members.addMemberError'));
                   }
                 }}
                 className={`px-4 py-2 rounded-lg text-sm sm:text-base whitespace-nowrap transition ${
@@ -226,16 +229,22 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                     {!isCreator && selectedGroup.createdBy === currentUser?.id && (
                       <button
                         onClick={async () => {
-                          if (confirm('Remove this member from the group?')) {
-                            const updatedMembers = selectedGroup.members.filter((id) => id !== memberId);
-                            await updateGroup(selectedGroup.id, { members: updatedMembers });
-                            setSelectedGroup({ ...selectedGroup, members: updatedMembers });
-                            setGroups(groups.map((g) => (g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g)));
+                          if (confirm(t('members.confirmRemove'))) {
+                            try {
+                              await removeMemberFromGroup(selectedGroup.id, memberId);
+                              const updatedMembers = selectedGroup.members.filter((id) => id !== memberId);
+                              setSelectedGroup({ ...selectedGroup, members: updatedMembers });
+                              setGroups(groups.map((g) => (g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g)));
+                              alert(t('members.memberRemoved'));
+                            } catch (error) {
+                              console.error('Error removing member:', error);
+                              alert(t('members.removeMemberError'));
+                            }
                           }
                         }}
                         className="text-red-500 text-xs sm:text-sm font-medium hover:text-red-700 flex-shrink-0"
                       >
-                        Remove
+                        {t('members.removeMember')}
                       </button>
                     )}
                   </div>

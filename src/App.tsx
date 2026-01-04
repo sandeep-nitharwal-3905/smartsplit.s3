@@ -225,6 +225,21 @@ export default function ExpenseSplitApp() {
             await loadUserData(user.id);
             await loadFriends(user.id);
 
+            // Check for pending join parameter from sessionStorage
+            try {
+              const pendingJoin = sessionStorage.getItem('pendingJoin');
+              if (pendingJoin) {
+                sessionStorage.removeItem('pendingJoin');
+                // Restore the join parameter to URL so the existing join handler picks it up
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.set('join', pendingJoin);
+                const newUrl = `${window.location.pathname}?${currentParams.toString()}${window.location.hash}`;
+                window.history.replaceState(null, '', newUrl);
+              }
+            } catch (error) {
+              console.error('Error restoring join parameter:', error);
+            }
+
             navigateTo('dashboard');
             setLoading(false);
           } else {
@@ -337,6 +352,18 @@ export default function ExpenseSplitApp() {
 
   // Navigation helper to change hash (and thus view)
   const navigateTo = (newView: string) => {
+    // When navigating to login from home page, preserve join parameter
+    if (newView === 'login' && view === 'home') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const joinParam = params.get('join');
+        if (joinParam) {
+          sessionStorage.setItem('pendingJoin', joinParam);
+        }
+      } catch (error) {
+        console.error('Error storing join parameter:', error);
+      }
+    }
     window.location.hash = newView;
   };
 

@@ -204,6 +204,17 @@
     "memberRemoved": "Member removed successfully!",
     "memberAdded": "Member added successfully!"
   },
+  "members": {
+    "userNotFound": "User not found",
+    "cannotAddSelf": "You cannot add yourself",
+    "alreadyInGroup": "User is already in the group",
+    "memberAdded": "Member added successfully!",
+    "addMemberError": "Failed to add member. Please try again.",
+    "confirmRemove": "Remove this member from the group?",
+    "removeMember": "Remove",
+    "memberRemoved": "Member removed successfully!",
+    "removeMemberError": "Failed to remove member. Please try again."
+  },
   "feedback": {
     "sendFeedback": "Send Feedback",
     "yourFeedback": "Your Feedback",

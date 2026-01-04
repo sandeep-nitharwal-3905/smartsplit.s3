@@ -242,7 +242,10 @@ export function DashboardView(props: DashboardViewProps) {
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
                         <span className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {getUserName(fromId)} owes {getUserName(toId)}
+                          {fromId === currentUser?.id 
+                            ? `${t('dashboard.youOwe')} ${getUserName(toId)}`
+                            : `${getUserName(fromId)} ${t('dashboard.owesYou')}`
+                          }
                         </span>
                         <span className={`font-bold text-sm sm:text-base ${isDarkTheme ? 'text-cyan-400' : 'text-teal-600'}`}>
                           ₹{amount.toFixed(2)}

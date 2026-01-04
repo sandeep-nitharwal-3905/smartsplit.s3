@@ -204,6 +204,17 @@
     "memberRemoved": "सदस्य सफलतापूर्वक हटाया गया!",
     "memberAdded": "सदस्य सफलतापूर्वक जोड़ा गया!"
   },
+  "members": {
+    "userNotFound": "उपयोगकर्ता नहीं मिला",
+    "cannotAddSelf": "आप स्वयं को नहीं जोड़ सकते",
+    "alreadyInGroup": "उपयोगकर्ता पहले से समूह में है",
+    "memberAdded": "सदस्य सफलतापूर्वक जोड़ा गया!",
+    "addMemberError": "सदस्य जोड़ने में विफल। कृपया पुनः प्रयास करें।",
+    "confirmRemove": "इस सदस्य को समूह से हटाएं?",
+    "removeMember": "हटाएं",
+    "memberRemoved": "सदस्य सफलतापूर्वक हटाया गया!",
+    "removeMemberError": "सदस्य हटाने में विफल। कृपया पुनः प्रयास करें।"
+  },
   "feedback": {
     "sendFeedback": "फ़ीडबैक भेजें",
     "yourFeedback": "आपका फ़ीडबैक",

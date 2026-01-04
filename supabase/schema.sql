@@ -186,6 +186,14 @@ create policy "Add members"
     public.is_group_creator(group_id) or user_id = auth.uid()
   );
 
+-- Allow group creators to remove members
+drop policy if exists "Remove members" on public.group_members;
+create policy "Remove members"
+  on public.group_members for delete
+  using (
+    public.is_group_creator(group_id)
+  );
+
 -- EXPENSES
 drop policy if exists "View expenses of your groups" on public.expenses;
 drop policy if exists "View expenses" on public.expenses;
