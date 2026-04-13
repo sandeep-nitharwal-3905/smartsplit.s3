@@ -16,7 +16,14 @@ i18n
         translation: hi
       }
     },
+    supportedLngs: ['en', 'hi'],
+    nonExplicitSupportedLngs: true,
+    load: 'languageOnly',
     fallbackLng: 'en',
+    detection: {
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage'],
+    },
     interpolation: {
       escapeValue: false
     }

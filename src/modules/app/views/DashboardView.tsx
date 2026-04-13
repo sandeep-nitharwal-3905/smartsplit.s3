@@ -34,6 +34,8 @@ interface DashboardViewProps {
 
 export function DashboardView(props: DashboardViewProps) {
   const { t, i18n } = useTranslation();
+  const normalizedLanguage = (i18n.resolvedLanguage || i18n.language || 'en').toLowerCase();
+  const isEnglish = normalizedLanguage.startsWith('en');
   const {
     isDarkTheme,
     toggleTheme,
@@ -86,11 +88,11 @@ export function DashboardView(props: DashboardViewProps) {
               {isDarkTheme ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
             <button
-              onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en')}
+              onClick={() => i18n.changeLanguage(isEnglish ? 'hi' : 'en')}
               className={`px-2 py-1 rounded transition text-xs font-semibold ${isDarkTheme ? 'hover:bg-cyan-700 bg-cyan-600' : 'hover:bg-teal-600 bg-teal-400'}`}
               title="Change Language / भाषा बदलें"
             >
-              {i18n.language === 'en' ? 'हि' : 'EN'}
+              {isEnglish ? 'हि' : 'EN'}
             </button>
             <button
               onClick={() => setView('profile')}

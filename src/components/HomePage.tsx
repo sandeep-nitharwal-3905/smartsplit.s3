@@ -31,11 +31,11 @@ interface HomePageProps {
 }
 
 export default function HomePage({ onGetStarted }: HomePageProps) {
+  const checkStandalone = () =>
+    window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-    return !isStandalone;
-  });
+  const [showInstallPrompt, setShowInstallPrompt] = useState(() => !checkStandalone());
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const { t } = useTranslation();
@@ -54,7 +54,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
   }, []);
 
   useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    const isStandalone = checkStandalone();
     setShowInstallPrompt(!isStandalone);
     if (isStandalone) return;
 
@@ -67,28 +67,53 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
     const handleAppInstalled = () => {
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
+      setShowInstallHelp(false);
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (checkStandalone()) {
+        setShowInstallPrompt(false);
+        setDeferredPrompt(null);
+        setShowInstallHelp(false);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, []);
 
   const handleInstallPwa = async () => {
-    if (!deferredPrompt) {
-      setShowInstallHelp((prev) => !prev);
+    if (checkStandalone()) {
+      setShowInstallPrompt(false);
+      setShowInstallHelp(false);
       return;
     }
 
-    await deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    if (choice.outcome === 'accepted') {
-      setShowInstallPrompt(false);
+    if (!deferredPrompt) {
+      setShowInstallHelp(true);
+      return;
     }
+
+    try {
+      await deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setShowInstallPrompt(false);
+        setShowInstallHelp(false);
+      }
+    } catch {
+      setShowInstallHelp(true);
+    }
+
     setDeferredPrompt(null);
   };
 
@@ -106,7 +131,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
       quote: 'We used SmartSplit for a 9-day trip. No arguments, no confusion, every rupee tracked clearly.',
     },
     {
-      name: 'AnilChoudhary',
+      name: 'Anil Choudhary',
       role: 'Flatmate',
       quote: 'Rent, groceries, electricity - we finally stopped using messy spreadsheets.',
     },
@@ -267,14 +292,16 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                         onClick={handleInstallPwa}
                         className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
                       >
-                        Install PWA
+                        {deferredPrompt ? 'Install PWA' : 'Open install steps'}
                       </button>
-                      <button
-                        onClick={() => setShowInstallHelp((prev) => !prev)}
-                        className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        How to install
-                      </button>
+                      {deferredPrompt && (
+                        <button
+                          onClick={() => setShowInstallHelp((prev) => !prev)}
+                          className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          How to install
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -284,8 +311,8 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                         <p>Tap Install PWA to open the browser prompt. If it does not appear, try again after a few seconds.</p>
                       ) : (
                         <p>
-                          Your browser may require the menu option. On Chrome, open the browser menu and choose Install app.
-                          On Safari, use Share and then Add to Home Screen.
+                          Your browser may use manual installation steps. On Chrome, open the browser menu and choose Install app.
+                          On Safari (iPhone), tap Share and then Add to Home Screen.
                         </p>
                       )}
                     </div>

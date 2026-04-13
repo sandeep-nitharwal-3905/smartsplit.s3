@@ -8,13 +8,15 @@ interface LanguageToggleProps {
 
 export function LanguageToggle({ isDarkTheme = false, className = '' }: LanguageToggleProps) {
   const { i18n } = useTranslation();
+  const normalizedLanguage = (i18n.resolvedLanguage || i18n.language || 'en').toLowerCase();
+  const isEnglish = normalizedLanguage.startsWith('en');
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'hi' : 'en';
+    const newLang = isEnglish ? 'hi' : 'en';
     i18n.changeLanguage(newLang);
   };
 
-  const currentLanguageLabel = i18n.language === 'en' ? 'EN' : 'हि';
+  const currentLanguageLabel = isEnglish ? 'EN' : 'हि';
 
   return (
     <button
@@ -24,8 +26,8 @@ export function LanguageToggle({ isDarkTheme = false, className = '' }: Language
           ? 'bg-cyan-500 text-gray-900 hover:bg-cyan-400'
           : 'bg-white text-gray-700 hover:bg-gray-100'
       } ${className}`}
-      title={i18n.language === 'en' ? 'Switch to Hindi' : 'अंग्रेज़ी में बदलें'}
-      aria-label={i18n.language === 'en' ? 'Switch language to Hindi' : 'भाषा अंग्रेज़ी में बदलें'}
+      title={isEnglish ? 'Switch to Hindi' : 'अंग्रेज़ी में बदलें'}
+      aria-label={isEnglish ? 'Switch language to Hindi' : 'भाषा अंग्रेज़ी में बदलें'}
     >
       <Languages className="w-4 h-4 sm:w-5 sm:h-5" />
       <span className="text-xs sm:text-sm font-semibold">{currentLanguageLabel}</span>
