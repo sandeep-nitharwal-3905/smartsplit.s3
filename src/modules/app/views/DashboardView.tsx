@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeftRight, Bell, Link as LinkIcon, LogOut, MessageSquare, Moon, Sun, User, Users } from 'lucide-react';
+import { ArrowLeftRight, Link as LinkIcon, LogOut, MessageSquare, Moon, Sun, User, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Expense, Group, User as AppUser } from '../types';
 
@@ -48,9 +48,6 @@ interface DashboardViewProps {
   handleJoinGroup: () => Promise<void>;
   setShowFeedbackModal: (value: boolean) => void;
   isAdmin: boolean;
-  pushSupported: boolean;
-  pushEnabled: boolean;
-  onEnablePushNotifications: () => Promise<void>;
 }
 
 export function DashboardView(props: DashboardViewProps) {
@@ -86,9 +83,6 @@ export function DashboardView(props: DashboardViewProps) {
     handleJoinGroup,
     setShowFeedbackModal,
     isAdmin,
-    pushSupported,
-    pushEnabled,
-    onEnablePushNotifications,
   } = props;
 
   const createCelebrationParticles = (): CelebrationParticle[] =>
@@ -320,31 +314,6 @@ export function DashboardView(props: DashboardViewProps) {
             </div>
           </button>
 
-          {pushSupported && (
-            <button
-              onClick={onEnablePushNotifications}
-              disabled={pushEnabled}
-              className={`sm:col-span-2 p-4 rounded-lg shadow-lg transition-all flex items-center justify-center gap-3 text-white ${
-                pushEnabled
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 cursor-default opacity-90'
-                  : isDarkTheme
-                    ? 'bg-gradient-to-r from-cyan-700 to-blue-700 hover:from-cyan-600 hover:to-blue-600'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600'
-              }`}
-            >
-              <Bell className="w-6 h-6" />
-              <div className="text-left">
-                <div className="font-bold text-base sm:text-lg">
-                  {pushEnabled ? 'Mobile notifications enabled' : 'Enable mobile notifications'}
-                </div>
-                <div className="text-xs opacity-90">
-                  {pushEnabled
-                    ? 'You will receive alerts for new expenses on this device.'
-                    : 'Get expense alerts even when the PWA is closed.'}
-                </div>
-              </div>
-            </button>
-          )}
         </div>
 
         {groups.length === 0 && expenses.length === 0 && (

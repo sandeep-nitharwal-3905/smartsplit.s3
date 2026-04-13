@@ -119,6 +119,7 @@ export default function ExpenseSplitApp() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [pushSupported, setPushSupported] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [isPushActionLoading, setIsPushActionLoading] = useState(false);
   const toggleTheme = () => {
     setIsDarkTheme(prev => {
       const next = !prev;
@@ -755,7 +756,7 @@ export default function ExpenseSplitApp() {
     }
   };
 
-  const handleEnablePushNotifications = async () => {
+  const handleTogglePushNotifications = async () => {
     if (!currentUser) return;
 
     if (!isPushSupported()) {
@@ -763,12 +764,23 @@ export default function ExpenseSplitApp() {
       return;
     }
 
-    if (!isInstalledPwa()) {
-      const proceed = confirm('For best reliability on mobile, install SmartSplit as a PWA first. Continue enabling notifications now?');
-      if (!proceed) return;
-    }
-
     try {
+      setIsPushActionLoading(true);
+
+      const existingSubscription = await getExistingPushSubscription();
+      if (existingSubscription) {
+        await deletePushSubscription(currentUser.id, existingSubscription.endpoint);
+        await existingSubscription.unsubscribe();
+        setPushEnabled(false);
+        notifySuccess('Push notifications disabled for this device.', 'group');
+        return;
+      }
+
+      if (!isInstalledPwa()) {
+        const proceed = confirm('For best reliability on mobile, install SmartSplit as a PWA first. Continue enabling notifications now?');
+        if (!proceed) return;
+      }
+
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         notifyError('Notification permission is required to receive alerts.');
@@ -778,26 +790,12 @@ export default function ExpenseSplitApp() {
       const subscription = await subscribeToPush();
       await upsertPushSubscription(currentUser.id, subscription);
       setPushEnabled(true);
-
       notifySuccess('Push notifications enabled on this device.', 'group');
-
-      // Send a one-time self-test push so users can verify setup immediately.
-      const testResult = await triggerPushNotification({
-        recipientUserIds: [currentUser.id],
-        title: 'SmartSplit notifications enabled',
-        body: 'You will now receive expense updates on this device.',
-        url: '/#dashboard',
-        includeSender: true,
-      });
-
-      if ((testResult.delivered || 0) > 0) {
-        notifySuccess('Test push notification sent successfully.', 'group');
-      } else {
-        notify('Push enabled, but test delivery was not confirmed. Check Vercel env vars and Supabase push_subscriptions table.', 'warning');
-      }
     } catch (error: any) {
       console.error('Failed to enable push notifications:', error);
       notifyError(error?.message || 'Failed to enable push notifications');
+    } finally {
+      setIsPushActionLoading(false);
     }
   };
 
@@ -1468,9 +1466,6 @@ export default function ExpenseSplitApp() {
             handleJoinGroup={handleJoinGroup}
             setShowFeedbackModal={setShowFeedbackModal}
             isAdmin={isAdmin}
-            pushSupported={pushSupported}
-            pushEnabled={pushEnabled}
-            onEnablePushNotifications={handleEnablePushNotifications}
           />
           {showFeedbackModal && (
             <FeedbackModal
@@ -1521,6 +1516,10 @@ export default function ExpenseSplitApp() {
             currentUser={currentUser}
             setView={navigateTo}
             onUpdateProfile={handleUpdateProfile}
+            pushSupported={pushSupported}
+            pushEnabled={pushEnabled}
+            isPushActionLoading={isPushActionLoading}
+            onTogglePushNotifications={handleTogglePushNotifications}
           />
         </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />

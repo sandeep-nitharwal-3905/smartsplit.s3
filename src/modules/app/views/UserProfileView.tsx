@@ -1,4 +1,4 @@
-import { ArrowLeft, Mail, User as UserIcon, Save } from 'lucide-react';
+import { ArrowLeft, Bell, Mail, User as UserIcon, Save } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { User } from '../types';
@@ -8,6 +8,10 @@ interface UserProfileViewProps {
   currentUser: User | null;
   setView: (view: string) => void;
   onUpdateProfile: (name: string) => Promise<void>;
+  pushSupported: boolean;
+  pushEnabled: boolean;
+  isPushActionLoading: boolean;
+  onTogglePushNotifications: () => Promise<void>;
 }
 
 export function UserProfileView({
@@ -15,6 +19,10 @@ export function UserProfileView({
   currentUser,
   setView,
   onUpdateProfile,
+  pushSupported,
+  pushEnabled,
+  isPushActionLoading,
+  onTogglePushNotifications,
 }: UserProfileViewProps) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -165,6 +173,55 @@ export function UserProfileView({
                   : 'N/A'}
               </div>
             </div>
+
+            {/* Push Notifications */}
+            {pushSupported && (
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    isDarkTheme ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  <Bell className="w-4 h-4 inline mr-2" />
+                  PWA Notifications
+                </label>
+                <button
+                  onClick={onTogglePushNotifications}
+                  disabled={isPushActionLoading}
+                  className={`w-full p-3 rounded-lg border transition text-left ${
+                    isDarkTheme
+                      ? 'border-gray-600 bg-gray-700 hover:bg-gray-600 disabled:opacity-70'
+                      : 'border-gray-300 bg-gray-100 hover:bg-gray-200 disabled:opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className={`text-sm font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                        {pushEnabled ? 'Disable notifications' : 'Enable notifications'}
+                      </div>
+                      <p className={`text-xs mt-1 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {pushEnabled
+                          ? 'Turn off expense alerts on this device.'
+                          : 'Get expense alerts even when the app is closed.'}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        pushEnabled
+                          ? isDarkTheme
+                            ? 'bg-emerald-900/60 text-emerald-300'
+                            : 'bg-emerald-100 text-emerald-700'
+                          : isDarkTheme
+                            ? 'bg-gray-600 text-gray-200'
+                            : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {pushEnabled ? 'On' : 'Off'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
