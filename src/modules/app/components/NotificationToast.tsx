@@ -57,7 +57,7 @@ export function NotificationToast({ notifications, isDarkTheme, onClose }: Notif
   };
 
   return (
-    <div className="fixed top-2 sm:top-4 right-2 sm:right-4 z-50 space-y-1.5 sm:space-y-2 w-[calc(100vw-1rem)] sm:w-auto max-w-sm" aria-live="polite" aria-atomic="true" role="status">
+    <div className="fixed top-2 sm:top-4 left-2 right-2 sm:left-auto sm:right-4 z-50 space-y-1.5 sm:space-y-2 w-auto max-w-sm" aria-live="polite" aria-atomic="true" role="status">
       {notifications.map((notification) => (
         <div
           key={notification.id}

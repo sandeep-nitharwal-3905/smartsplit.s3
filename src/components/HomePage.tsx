@@ -101,17 +101,17 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
 
   const testimonials = [
     {
-      name: 'Aman K.',
+      name: 'Aviral Gupta',
       role: 'Trip Organizer',
       quote: 'We used SmartSplit for a 9-day trip. No arguments, no confusion, every rupee tracked clearly.',
     },
     {
-      name: 'Neha S.',
+      name: 'AnilChoudhary',
       role: 'Flatmate',
       quote: 'Rent, groceries, electricity - we finally stopped using messy spreadsheets.',
     },
     {
-      name: 'Rohan M.',
+      name: 'Hariom Jaat',
       role: 'College Student',
       quote: 'Fastest expense app I have used. Adding and settling takes seconds.',
     },
