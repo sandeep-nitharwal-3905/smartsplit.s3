@@ -32,8 +32,12 @@ interface HomePageProps {
 
 export default function HomePage({ onGetStarted }: HomePageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    return !isStandalone;
+  });
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -51,6 +55,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    setShowInstallPrompt(!isStandalone);
     if (isStandalone) return;
 
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -74,7 +79,10 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
   }, []);
 
   const handleInstallPwa = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      setShowInstallHelp((prev) => !prev);
+      return;
+    }
 
     await deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
@@ -180,41 +188,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
         </div>
       </nav>
 
-      {showInstallPrompt && (
-        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto rounded-2xl border border-teal-200 bg-slate-950 text-white shadow-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-xl bg-teal-500/20 p-2">
-                <Smartphone className="w-5 h-5 text-teal-300" />
-              </div>
-              <div>
-                <p className="font-bold text-base sm:text-lg">Install SmartSplit for a better mobile experience</p>
-                <p className="text-sm sm:text-base text-slate-300">
-                  Add the app to your home screen for faster access, smoother navigation, and offline-friendly use.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowInstallPrompt(false)}
-                className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-900"
-              >
-                Not now
-              </button>
-              <button
-                onClick={handleInstallPwa}
-                className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-slate-100"
-              >
-                Install app
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <header className="pt-28 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 bg-white border border-teal-200 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm">
                 <Star className="w-4 h-4 fill-current" />
@@ -271,6 +247,51 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                   <span className="text-sm sm:text-base text-gray-600">Instant Setup</span>
                 </div>
               </div>
+
+              {showInstallPrompt && (
+                <div className="rounded-3xl border border-teal-200 bg-white/90 p-4 sm:p-5 shadow-lg backdrop-blur-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-xl bg-teal-500/10 p-2">
+                        <Smartphone className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-base sm:text-lg">Install PWA for a better experience</p>
+                        <p className="text-sm sm:text-base text-slate-600">
+                          Save SmartSplit to your home screen for faster access and a more app-like experience.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      <button
+                        onClick={handleInstallPwa}
+                        className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
+                      >
+                        Install PWA
+                      </button>
+                      <button
+                        onClick={() => setShowInstallHelp((prev) => !prev)}
+                        className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        How to install
+                      </button>
+                    </div>
+                  </div>
+
+                  {showInstallHelp && (
+                    <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+                      {deferredPrompt ? (
+                        <p>Tap Install PWA to open the browser prompt. If it does not appear, try again after a few seconds.</p>
+                      ) : (
+                        <p>
+                          Your browser may require the menu option. On Chrome, open the browser menu and choose Install app.
+                          On Safari, use Share and then Add to Home Screen.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="relative">
@@ -285,9 +306,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                   className="rounded-2xl w-full"
                 />
               </div>
-              <div className="absolute -bottom-4 -left-4 sm:-left-8 rounded-2xl bg-slate-900 text-white px-4 py-3 shadow-xl">
+              <div className="absolute -bottom-3 left-4 sm:-left-8 rounded-2xl bg-slate-900 text-white px-4 py-3 shadow-xl max-w-[220px] sm:max-w-none">
                 <p className="text-xs uppercase tracking-wider text-slate-300">Average setup time</p>
-                <p className="text-xl font-bold">Under 2 minutes</p>
+                <p className="text-lg sm:text-xl font-bold">Under 2 minutes</p>
               </div>
             </div>
           </div>
