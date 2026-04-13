@@ -30,6 +30,26 @@ interface HomePageProps {
   onGetStarted: () => void;
 }
 
+interface CelebrationParticle {
+  id: number;
+  left: number;
+  top: number;
+  size: number;
+  delay: number;
+  duration: number;
+  kind: 'flower' | 'spark';
+}
+
+interface BlessingDrop {
+  id: number;
+  left: number;
+  delay: number;
+  duration: number;
+  size: number;
+  rotation: number;
+  message: string;
+}
+
 export default function HomePage({ onGetStarted }: HomePageProps) {
   const checkStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
@@ -38,7 +58,51 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
   const [showInstallPrompt, setShowInstallPrompt] = useState(() => !checkStandalone());
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
+  const [isBlessingOpen, setIsBlessingOpen] = useState(false);
+  const [celebrationParticles, setCelebrationParticles] = useState<CelebrationParticle[]>([]);
+  const [blessingDrops, setBlessingDrops] = useState<BlessingDrop[]>([]);
   const { t } = useTranslation();
+
+  const devotionalMessages = [
+    'Jay Sharee Khatu Shyam',
+    'Jay Sawaliya Saith ki Jay',
+    'Jay Shree Ram',
+    'Jay Shree Hanuman',
+  ];
+
+  const createCelebrationParticles = (): CelebrationParticle[] =>
+    Array.from({ length: 24 }, (_, index) => ({
+      id: Date.now() + index,
+      left: Math.random() * 92 + 4,
+      top: Math.random() * 72 + 12,
+      size: Math.floor(Math.random() * 8) + 7,
+      delay: Math.floor(Math.random() * 700),
+      duration: Math.floor(Math.random() * 1200) + 1100,
+      kind: index % 3 === 0 ? 'flower' : 'spark',
+    }));
+
+  const createBlessingDrops = (): BlessingDrop[] =>
+    Array.from({ length: 18 }, (_, index) => ({
+      id: Date.now() + 100 + index,
+      left: Math.random() * 90 + 5,
+      delay: Math.floor(Math.random() * 1200),
+      duration: Math.floor(Math.random() * 2500) + 3800,
+      size: Math.floor(Math.random() * 8) + 15,
+      rotation: Math.floor(Math.random() * 30) - 15,
+      message: devotionalMessages[Math.floor(Math.random() * devotionalMessages.length)],
+    }));
+
+  const triggerBlessingCelebration = () => {
+    setIsBlessingOpen(true);
+    setCelebrationParticles(createCelebrationParticles());
+    setBlessingDrops(createBlessingDrops());
+  };
+
+  const dismissBlessingCelebration = () => {
+    setIsBlessingOpen(false);
+    setCelebrationParticles([]);
+    setBlessingDrops([]);
+  };
 
   useEffect(() => {
     document.title = 'SmartSplit - Split expenses smarter with friends, groups, and real-time balances';
@@ -90,6 +154,21 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
       document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isBlessingOpen) return;
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        dismissBlessingCelebration();
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [isBlessingOpen]);
 
   const handleInstallPwa = async () => {
     if (checkStandalone()) {
@@ -163,15 +242,108 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dff6ff_0%,_#f8fffb_45%,_#ffffff_100%)]">
+      {isBlessingOpen && (
+        <div
+          className="fixed inset-0 z-[70] overflow-hidden cursor-pointer"
+          onClick={dismissBlessingCelebration}
+          role="button"
+          aria-label="Close blessing celebration"
+          title="Click anywhere to close"
+        >
+          <style>
+            {`@keyframes blessingRainDrop { 0% { transform: translateY(-18vh) rotate(var(--rot)); opacity: 0; } 12% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(110vh) rotate(calc(var(--rot) * -1)); opacity: 0; } }
+              @keyframes firecrackerPulse { 0% { transform: scale(0.5); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }`}
+          </style>
+
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-100/65 via-white/20 to-rose-100/65 backdrop-blur-[2px]" />
+
+          {celebrationParticles.map((particle) => (
+            <div
+              key={particle.id}
+              className="absolute pointer-events-none"
+              style={{
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+                animationDelay: `${particle.delay}ms`,
+              }}
+            >
+              {particle.kind === 'spark' ? (
+                <div
+                  className="rounded-full bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 shadow-lg shadow-amber-300/60"
+                  style={{
+                    width: `${particle.size}px`,
+                    height: `${particle.size}px`,
+                    animation: `firecrackerPulse ${particle.duration}ms ease-out infinite`,
+                  }}
+                />
+              ) : (
+                <div className="relative animate-bounce" style={{ animationDuration: `${particle.duration}ms` }}>
+                  <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-pink-300/90" />
+                  <span className="absolute left-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-rose-300/90" />
+                  <span className="absolute right-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-fuchsia-300/90" />
+                  <span className="absolute bottom-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-pink-200/90" />
+                  <span className="block h-2.5 w-2.5 rounded-full bg-amber-300/90" />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {blessingDrops.map((drop) => (
+            <div
+              key={drop.id}
+              className="absolute pointer-events-none"
+              style={{
+                left: `${drop.left}%`,
+                top: '-14vh',
+                animation: `blessingRainDrop ${drop.duration}ms linear ${drop.delay}ms forwards`,
+                ['--rot' as any]: `${drop.rotation}deg`,
+              }}
+            >
+              <div
+                className="rounded-full border border-orange-200/70 bg-white/85 px-4 py-2 font-bold text-orange-700 shadow-lg backdrop-blur-sm"
+                style={{ fontSize: `${drop.size}px`, transform: `rotate(${drop.rotation}deg)` }}
+              >
+                {drop.message}
+              </div>
+            </div>
+          ))}
+
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="relative w-40 sm:w-48 md:w-56 rounded-3xl border border-amber-300/50 bg-white/30 p-2 shadow-2xl backdrop-blur-[1px] opacity-45">
+              <img
+                src="/KhatuShyam.png"
+                alt="Khatu Shyam"
+                className="w-full rounded-2xl border border-amber-100/70 shadow-sm"
+              />
+              <div className="absolute -inset-3 -z-10 rounded-3xl bg-gradient-to-r from-amber-300/25 via-rose-300/15 to-orange-300/25 blur-2xl" />
+            </div>
+          </div>
+
+          <div className="absolute left-1/2 top-8 -translate-x-1/2 rounded-full border border-amber-300/80 bg-white/95 px-5 py-2 text-xs sm:text-sm font-semibold text-slate-700 shadow-lg pointer-events-none">
+            Celebration mode. Click anywhere to close.
+          </div>
+        </div>
+      )}
+
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-teal-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="SmartSplit Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+            <button
+              type="button"
+              onClick={triggerBlessingCelebration}
+              className="group relative flex cursor-pointer items-center gap-2 rounded-xl border border-transparent px-2 py-1 transition hover:border-teal-200 hover:bg-white/80 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+              title="Tap for blessings"
+              aria-label="Show random blessing celebration"
+            >
+              <img src="/logo.png" alt="SmartSplit Logo" className="h-8 w-8 sm:h-10 sm:w-10 transition-transform duration-300 hover:rotate-12" />
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
                 {t('common.appName')}
               </span>
-            </div>
+              <span className="absolute -right-2 -top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm transition group-hover:scale-105">
+                Tap
+              </span>
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-ping rounded-full bg-rose-400" />
+            </button>
 
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-gray-700 hover:text-teal-600 transition-colors">Features</a>
