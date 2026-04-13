@@ -193,15 +193,25 @@ export const onGroupExpensesChange = (groupId: string | null, callback: (expense
 };
 
 export const getUserExpenses = async (userId: string) => {
-  // First find all expense_ids where the user has a split row
+  // 1) Expense ids where user participates via splits
   const { data: splitRows, error: splitError } = await supabase
     .from('expense_splits')
     .select('expense_id')
     .eq('user_id', userId);
 
   if (splitError) throw splitError;
-  const expenseIds = Array.from(new Set((splitRows || []).map((r: any) => r.expense_id)));
+  const splitExpenseIds = Array.from(new Set((splitRows || []).map((r: any) => r.expense_id as string)));
 
+  // 2) Expense ids where user is payer (covers payer-only scenarios)
+  const { data: paidRows, error: paidError } = await supabase
+    .from('expenses')
+    .select('id')
+    .eq('paid_by', userId);
+
+  if (paidError) throw paidError;
+  const paidExpenseIds = (paidRows || []).map((r: any) => r.id as string);
+
+  const expenseIds = Array.from(new Set([...splitExpenseIds, ...paidExpenseIds]));
   if (!expenseIds.length) return [] as Expense[];
 
   const { data, error } = await supabase
@@ -214,15 +224,26 @@ export const getUserExpenses = async (userId: string) => {
   return (data || []).map(mapExpense);
 };
 
-export const onUserExpensesChange = (userId: string, callback: (expenses: Expense[]) => void) => {
+export const onUserExpensesChange = (
+  userId: string,
+  callback: (expenses: Expense[], changeMeta?: { table: 'expense_splits' | 'expenses'; eventType?: string }) => void
+) => {
   const channel = supabase
     .channel(`user-expenses-${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'expense_splits', filter: `user_id=eq.${userId}` },
-      async () => {
+      async (payload: any) => {
         const expenses = await getUserExpenses(userId);
-        callback(expenses);
+        callback(expenses, { table: 'expense_splits', eventType: payload?.eventType });
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'expenses', filter: `paid_by=eq.${userId}` },
+      async (payload: any) => {
+        const expenses = await getUserExpenses(userId);
+        callback(expenses, { table: 'expenses', eventType: payload?.eventType });
       }
     )
     .subscribe();

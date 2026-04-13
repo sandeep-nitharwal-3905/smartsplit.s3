@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import HomePage from './components/HomePage';
 import { NotificationToast } from './modules/app/components/NotificationToast';
 import { FeedbackModal } from './modules/app/components/FeedbackModal';
@@ -45,7 +45,8 @@ export default function ExpenseSplitApp() {
   const [view, setView] = useState('home');
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  // All expenses for the current user (used on dashboard / overall balances)
+  // All expenses involving the current user (participant or payer)
+  // used on dashboard / overall balances.
   const [expenses, setExpenses] = useState<Expense[]>([]);
   // Expenses for the currently selected group (used on group detail)
   const [groupExpenses, setGroupExpenses] = useState<Expense[]>([]);
@@ -93,6 +94,8 @@ export default function ExpenseSplitApp() {
 
   // Notification states
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const hasHydratedUserExpensesRef = useRef(false);
+  const knownUserExpenseIdsRef = useRef<Set<string>>(new Set());
 
   // Edit expense states
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -134,7 +137,7 @@ export default function ExpenseSplitApp() {
 
   useEffect(() => {
     calculateBalances();
-  }, [expenses, groupExpenses, friends, selectedGroup]);
+  }, [expenses, groupExpenses, selectedGroup, currentUser]);
 
   // Realtime updates for user's groups
   useEffect(() => {
@@ -149,21 +152,50 @@ export default function ExpenseSplitApp() {
     };
   }, [currentUser]);
 
-  // Realtime updates for user's expenses (when not viewing a specific group)
+  // Realtime updates for user's expenses (all contexts)
   useEffect(() => {
-    if (!currentUser || selectedGroup) return;
+    if (!currentUser) return;
 
-    const unsubscribe = onUserExpensesChange(currentUser.id, (updatedExpenses) => {
-      // For dashboard "Overall Balances" we only want personal (non-group) expenses
-      const personalExpenses = (updatedExpenses as Expense[]).filter((e) => !e.groupId);
-      setExpenses(personalExpenses);
-      loadUsersFromExpenses(personalExpenses);
+    hasHydratedUserExpensesRef.current = false;
+    knownUserExpenseIdsRef.current = new Set();
+
+    const unsubscribe = onUserExpensesChange(currentUser.id, (updatedExpenses, changeMeta) => {
+      const updated = updatedExpenses as Expense[];
+      const nextIds = new Set(updated.map((e) => e.id));
+
+      setExpenses(updated);
+      loadUsersFromExpenses(updated);
+
+      // Avoid firing toasts for the initial hydration snapshot.
+      if (!hasHydratedUserExpensesRef.current) {
+        hasHydratedUserExpensesRef.current = true;
+        knownUserExpenseIdsRef.current = nextIds;
+        return;
+      }
+
+      const previousIds = knownUserExpenseIdsRef.current;
+      const newlyAdded = updated.filter((e) => !previousIds.has(e.id));
+      knownUserExpenseIdsRef.current = nextIds;
+
+      if (changeMeta?.eventType === 'INSERT' && newlyAdded.length > 0) {
+        newlyAdded
+          .filter((expense) => expense.createdBy !== currentUser.id)
+          .slice(0, 2)
+          .forEach((expense) => {
+            const groupName = groups.find((g) => g.id === expense.groupId)?.name;
+            const payerName = getUserName(expense.paidBy);
+            addNotification({
+              type: 'expense',
+              message: `${payerName} added \"${expense.description}\" (Rs.${expense.amount.toFixed(2)})${groupName ? ` in ${groupName}` : ''}`,
+            });
+          });
+      }
     });
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [currentUser, selectedGroup]);
+  }, [currentUser, groups, memberCache, friends]);
 
   // Realtime updates for group expenses (when viewing a specific group)
   useEffect(() => {
@@ -470,10 +502,11 @@ export default function ExpenseSplitApp() {
     
     try {
       const userExpenses = await getUserExpenses(currentUser.id);
-      // Keep only non-group expenses for the dashboard "Overall Balances"
-      const personalExpenses = (userExpenses as Expense[]).filter((e) => !e.groupId);
-      setExpenses(personalExpenses);
-      await loadUsersFromExpenses(personalExpenses);
+      const normalizedExpenses = userExpenses as Expense[];
+      setExpenses(normalizedExpenses);
+      hasHydratedUserExpensesRef.current = true;
+      knownUserExpenseIdsRef.current = new Set(normalizedExpenses.map((expense) => expense.id));
+      await loadUsersFromExpenses(normalizedExpenses);
     } catch (error) {
       console.error('Error loading user expenses:', error);
     }
@@ -500,7 +533,7 @@ export default function ExpenseSplitApp() {
     const balanceMap: Record<string, number> = {};
     const relevantExpenses = selectedGroup
       ? groupExpenses
-      : expenses.filter((e) => currentUser && e.participants.includes(currentUser.id));
+      : expenses;
 
     relevantExpenses.forEach((expense) => {
       const payer = expense.paidBy;
@@ -533,6 +566,25 @@ export default function ExpenseSplitApp() {
     });
 
     setBalances(balanceMap);
+  };
+
+  const addNotification = (payload: Omit<Notification, 'id' | 'timestamp'>) => {
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const notification: Notification = {
+      id,
+      message: payload.message,
+      type: payload.type,
+      timestamp: Date.now(),
+    };
+
+    setNotifications((prev) => [notification, ...prev].slice(0, 5));
+
+    window.setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 6000);
   };
 
   // Auth handlers
@@ -800,6 +852,11 @@ export default function ExpenseSplitApp() {
         setSelectedParticipants([]);
         setSplitMode('equal');
         setCustomSplits({});
+
+        addNotification({
+          type: 'expense',
+          message: 'Expense added successfully. Associated members will be notified.',
+        });
         
         window.history.back();
         alert('Expense added successfully!');
