@@ -78,6 +78,19 @@ create table if not exists public.feedbacks (
   created_at timestamptz default now()
 );
 
+-- 10. Push Subscriptions (PWA/Web Push)
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  endpoint text not null,
+  p256dh text,
+  auth text,
+  user_agent text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique (user_id, endpoint)
+);
+
 -- Indexes for performance
 create index if not exists idx_group_members_user on public.group_members(user_id);
 create index if not exists idx_group_members_group on public.group_members(group_id);
@@ -91,6 +104,8 @@ create index if not exists idx_friendships_friend on public.friendships(friend_i
 create index if not exists idx_settlements_group on public.settlements(group_id);
 create index if not exists idx_feedbacks_created_at on public.feedbacks(created_at);
 create index if not exists idx_feedbacks_user on public.feedbacks(user_id);
+create index if not exists idx_push_subscriptions_user on public.push_subscriptions(user_id);
+create index if not exists idx_push_subscriptions_endpoint on public.push_subscriptions(endpoint);
 
 -- Enable RLS
 alter table public.profiles enable row level security;
@@ -101,6 +116,7 @@ alter table public.expense_splits enable row level security;
 alter table public.settlements enable row level security;
 alter table public.friendships enable row level security;
 alter table public.feedbacks enable row level security;
+alter table public.push_subscriptions enable row level security;
 
 -- ================= RLS POLICIES =================
 
@@ -334,6 +350,28 @@ drop policy if exists "Authenticated users can delete feedbacks" on public.feedb
 create policy "Authenticated users can delete feedbacks"
   on public.feedbacks for delete
   using (auth.uid() is not null);
+
+-- PUSH SUBSCRIPTIONS
+drop policy if exists "Users can view own push subscriptions" on public.push_subscriptions;
+create policy "Users can view own push subscriptions"
+  on public.push_subscriptions for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own push subscriptions" on public.push_subscriptions;
+create policy "Users can insert own push subscriptions"
+  on public.push_subscriptions for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own push subscriptions" on public.push_subscriptions;
+create policy "Users can update own push subscriptions"
+  on public.push_subscriptions for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete own push subscriptions" on public.push_subscriptions;
+create policy "Users can delete own push subscriptions"
+  on public.push_subscriptions for delete
+  using (auth.uid() = user_id);
 
 -- ================= TRIGGERS =================
 

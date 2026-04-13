@@ -8,6 +8,19 @@ Supabase-backed rebuild of SmartSplit with modular services and realtime expense
 - Install dependencies: `npm install`.
 - Run the dev server: `npm run dev`.
 
+## Mobile PWA Push Notifications
+- This app now supports Web Push notifications for installed PWA users.
+- Required client env var: `VITE_VAPID_PUBLIC_KEY`.
+- Required server env vars (deployment only): `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+- Generate VAPID keys once:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+- Add these values in your deployment provider (for example Vercel project settings).
+- After deploying, users can enable notifications from the dashboard using the "Enable mobile notifications" button.
+
 ## Architecture
 - `src/modules/supabase/` holds the Supabase client.
 - `src/modules/data/` contains domain services (auth, groups, expenses, friends, settlements, profiles).

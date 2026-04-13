@@ -38,7 +38,16 @@ import {
   getAllFeedbacks,
   isAdmin as checkIsAdmin,
   type Feedback,
+  upsertPushSubscription,
+  deletePushSubscription,
 } from './modules/data';
+import { supabase } from './modules/supabase/client';
+import {
+  getExistingPushSubscription,
+  isInstalledPwa,
+  isPushSupported,
+  subscribeToPush,
+} from './modules/push/pwaPush';
 
 export default function ExpenseSplitApp() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -107,6 +116,8 @@ export default function ExpenseSplitApp() {
 
   // Theme state
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const toggleTheme = () => {
     setIsDarkTheme(prev => {
       const next = !prev;
@@ -227,6 +238,29 @@ export default function ExpenseSplitApp() {
     } else {
       setIsAdmin(false);
     }
+  }, [currentUser]);
+
+  useEffect(() => {
+    setPushSupported(isPushSupported());
+  }, []);
+
+  useEffect(() => {
+    const syncPushStatus = async () => {
+      if (!currentUser || !isPushSupported()) {
+        setPushEnabled(false);
+        return;
+      }
+
+      try {
+        const subscription = await getExistingPushSubscription();
+        setPushEnabled(Boolean(subscription));
+      } catch (error) {
+        console.error('Failed to read push subscription:', error);
+        setPushEnabled(false);
+      }
+    };
+
+    syncPushStatus();
   }, [currentUser]);
 
   // Load feedbacks for admin
@@ -676,10 +710,89 @@ export default function ExpenseSplitApp() {
 
   const handleLogout = async () => {
     try {
+      if (currentUser && isPushSupported()) {
+        const existingSubscription = await getExistingPushSubscription();
+        if (existingSubscription) {
+          await deletePushSubscription(currentUser.id, existingSubscription.endpoint);
+          await existingSubscription.unsubscribe();
+          setPushEnabled(false);
+        }
+      }
+
       await logoutUser();
     } catch (error: any) {
       console.error('Logout error:', error);
       alert(error.message || 'Logout failed');
+    }
+  };
+
+  const handleEnablePushNotifications = async () => {
+    if (!currentUser) return;
+
+    if (!isPushSupported()) {
+      alert('Push notifications are not supported on this device/browser.');
+      return;
+    }
+
+    if (!isInstalledPwa()) {
+      const proceed = confirm('For best reliability on mobile, install SmartSplit as a PWA first. Continue enabling notifications now?');
+      if (!proceed) return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Notification permission is required to receive alerts.');
+        return;
+      }
+
+      const subscription = await subscribeToPush();
+      await upsertPushSubscription(currentUser.id, subscription);
+      setPushEnabled(true);
+
+      addNotification({
+        type: 'group',
+        message: 'Push notifications enabled on this device.',
+      });
+    } catch (error: any) {
+      console.error('Failed to enable push notifications:', error);
+      alert(error?.message || 'Failed to enable push notifications');
+    }
+  };
+
+  const sendExpensePushNotification = async (expense: {
+    description: string;
+    amount: number;
+    groupId: string | null;
+  }, recipientUserIds: string[]) => {
+    if (!currentUser || recipientUserIds.length === 0) return;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) return;
+
+      const groupName = expense.groupId
+        ? groups.find((group) => group.id === expense.groupId)?.name || 'your group'
+        : 'SmartSplit';
+
+      await fetch('/api/push-notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          recipientUserIds,
+          title: 'New expense added',
+          body: `${currentUser.name} added \"${expense.description}\" (Rs.${expense.amount.toFixed(2)}) in ${groupName}.`,
+          url: expense.groupId ? '/#groupDetail' : '/#dashboard',
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to trigger expense push notifications:', error);
     }
   };
 
@@ -838,6 +951,12 @@ export default function ExpenseSplitApp() {
 
         const docRef = await createSupabaseExpense(newExpense);
         const createdExpense = { id: docRef.id, ...newExpense } as Expense;
+
+        const recipientUserIds = Array.from(
+          new Set([...selectedParticipants, selectedPayer].filter((userId) => userId !== currentUser.id))
+        );
+
+        void sendExpensePushNotification(createdExpense, recipientUserIds);
 
         if (selectedGroup) {
           setGroupExpenses([...groupExpenses, createdExpense]);
@@ -1248,6 +1367,9 @@ export default function ExpenseSplitApp() {
           handleJoinGroup={handleJoinGroup}
           setShowFeedbackModal={setShowFeedbackModal}
           isAdmin={isAdmin}
+          pushSupported={pushSupported}
+          pushEnabled={pushEnabled}
+          onEnablePushNotifications={handleEnablePushNotifications}
         />
         {showFeedbackModal && (
           <FeedbackModal
