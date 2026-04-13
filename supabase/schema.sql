@@ -337,19 +337,15 @@ create policy "Anyone can create feedback"
   on public.feedbacks for insert
   with check (true);
 
--- Note: Admin check is handled in the application layer via VITE_ADMIN_EMAILS
--- This policy allows authenticated users to attempt to view feedbacks,
--- but the actual admin check happens in the TypeScript code
 drop policy if exists "Admins can view all feedbacks" on public.feedbacks;
 create policy "Admins can view all feedbacks"
   on public.feedbacks for select
-  using (auth.uid() is not null);
+  using (false);
 
--- Allow authenticated users to delete feedbacks (admin check is done in application layer)
 drop policy if exists "Authenticated users can delete feedbacks" on public.feedbacks;
 create policy "Authenticated users can delete feedbacks"
   on public.feedbacks for delete
-  using (auth.uid() is not null);
+  using (false);
 
 -- PUSH SUBSCRIPTIONS
 drop policy if exists "Users can view own push subscriptions" on public.push_subscriptions;

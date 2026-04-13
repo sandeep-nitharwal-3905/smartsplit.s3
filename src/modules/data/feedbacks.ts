@@ -58,13 +58,22 @@ export async function submitFeedback(feedback: {
 
 export async function getAllFeedbacks(): Promise<Feedback[]> {
   try {
-    const { data, error } = await supabase
-      .from('feedbacks')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch('/api/feedbacks', {
+      method: 'GET',
+      headers: session?.access_token
+        ? {
+            Authorization: `Bearer ${session.access_token}`,
+          }
+        : undefined,
+    });
 
-    if (error) throw error;
-    return data || [];
+    if (!response.ok) {
+      throw new Error((await response.json()).error || 'Failed to fetch feedbacks');
+    }
+
+    const payload = await response.json();
+    return payload.feedbacks || [];
   } catch (error) {
     console.error('Error fetching feedbacks:', error);
     return [];
@@ -73,12 +82,20 @@ export async function getAllFeedbacks(): Promise<Feedback[]> {
 
 export async function deleteFeedback(feedbackId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .from('feedbacks')
-      .delete()
-      .eq('id', feedbackId);
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch(`/api/feedbacks?id=${encodeURIComponent(feedbackId)}`, {
+      method: 'DELETE',
+      headers: session?.access_token
+        ? {
+            Authorization: `Bearer ${session.access_token}`,
+          }
+        : undefined,
+    });
 
-    if (error) throw error;
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(body.error || 'Failed to delete feedback');
+    }
 
     return { success: true };
   } catch (error: any) {

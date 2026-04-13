@@ -612,6 +612,7 @@ export default function ExpenseSplitApp() {
       message: payload.message,
       type: payload.type,
       timestamp: Date.now(),
+      variant: payload.variant,
     };
 
     setNotifications((prev) => [notification, ...prev].slice(0, 5));
@@ -621,15 +622,31 @@ export default function ExpenseSplitApp() {
     }, 6000);
   };
 
+  const notifySuccess = (message: string, type: Notification['type'] = 'group') => {
+    addNotification({ type, message, variant: 'success' });
+  };
+
+  const notifyError = (message: string, type: Notification['type'] = 'group') => {
+    addNotification({ type, message, variant: 'error' });
+  };
+
+  const notify = (message: string, variant: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    addNotification({ type: 'group', message, variant });
+  };
+
+  const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
+  const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
   // Auth handlers
   const handleAuth = async () => {
     if (!email || !password) {
-      alert('Please fill in all fields');
+      notifyError('Please fill in all fields');
       return;
     }
 
     if (isSignUp && !name) {
-      alert('Please enter your name');
+      notifyError('Please enter your name');
       return;
     }
 
@@ -637,13 +654,13 @@ export default function ExpenseSplitApp() {
       if (isSignUp) {
         await signUpUser(email, password, name);
         setEmailVerificationSent(true);
-        alert('Account created! Please check your email to verify your account.');
+        notifySuccess('Account created! Please check your email to verify your account.', 'group');
       } else {
         await signInUser(email, password);
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      alert(error.message || 'Authentication failed');
+      notifyError(error.message || 'Authentication failed');
     }
   };
 
@@ -654,38 +671,39 @@ export default function ExpenseSplitApp() {
       // Auth state change will be handled automatically on redirect
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      alert(error.message || 'Google sign-in failed');
+      notifyError(error.message || 'Google sign-in failed');
     }
   };
 
   const handleForgotPassword = async () => {
     if (!email) {
-      alert('Please enter your email address');
+      notifyError('Please enter your email address');
       return;
     }
 
     try {
       await resetPassword(email);
       setResetPasswordSent(true);
+      notifySuccess('Password reset email sent. Check your inbox.', 'group');
     } catch (error: any) {
       console.error('Password reset error:', error);
-      alert(error.message || 'Failed to send password reset email');
+      notifyError(error.message || 'Failed to send password reset email');
     }
   };
 
   const handleUpdatePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      alert('Please fill in all fields');
+      notifyError('Please fill in all fields');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert('Passwords do not match');
+      notifyError('Passwords do not match');
       return;
     }
 
     if (newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
+      notifyError('Password must be at least 6 characters long');
       return;
     }
 
@@ -703,7 +721,7 @@ export default function ExpenseSplitApp() {
       }, 2000);
     } catch (error: any) {
       console.error('Password update error:', error);
-      alert(error.message || 'Failed to update password');
+      notifyError(error.message || 'Failed to update password');
     }
   };
 
@@ -722,7 +740,7 @@ export default function ExpenseSplitApp() {
       await logoutUser();
     } catch (error: any) {
       console.error('Logout error:', error);
-      alert(error.message || 'Logout failed');
+      notifyError(error.message || 'Logout failed');
     }
   };
 
@@ -730,7 +748,7 @@ export default function ExpenseSplitApp() {
     if (!currentUser) return;
 
     if (!isPushSupported()) {
-      alert('Push notifications are not supported on this device/browser.');
+      notifyError('Push notifications are not supported on this device/browser.');
       return;
     }
 
@@ -742,7 +760,7 @@ export default function ExpenseSplitApp() {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        alert('Notification permission is required to receive alerts.');
+        notifyError('Notification permission is required to receive alerts.');
         return;
       }
 
@@ -750,13 +768,10 @@ export default function ExpenseSplitApp() {
       await upsertPushSubscription(currentUser.id, subscription);
       setPushEnabled(true);
 
-      addNotification({
-        type: 'group',
-        message: 'Push notifications enabled on this device.',
-      });
+      notifySuccess('Push notifications enabled on this device.', 'group');
     } catch (error: any) {
       console.error('Failed to enable push notifications:', error);
-      alert(error?.message || 'Failed to enable push notifications');
+      notifyError(error?.message || 'Failed to enable push notifications');
     }
   };
 
@@ -799,9 +814,9 @@ export default function ExpenseSplitApp() {
   const handleSubmitFeedback = async (feedbackData: { message: string; rating?: number }) => {
     const result = await submitFeedback(feedbackData);
     if (result.success) {
-      alert('Thank you for your feedback!');
+      notifySuccess('Thank you for your feedback!', 'group');
     } else {
-      alert(result.error || 'Failed to submit feedback');
+      notifyError(result.error || 'Failed to submit feedback');
     }
   };
 
@@ -812,7 +827,7 @@ export default function ExpenseSplitApp() {
 
   const handleAddGroup = async () => {
     if (!groupName.trim()) {
-      alert('Please enter a group name');
+      notifyError('Please enter a group name');
       return;
     }
 
@@ -836,33 +851,34 @@ export default function ExpenseSplitApp() {
       setShowGroupCreatedModal(true);
     } catch (error: any) {
       console.error('Error creating group:', error);
-      alert(error.message || 'Failed to create group');
+      notifyError(error.message || 'Failed to create group');
     }
   };
 
   const handleAddFriend = async () => {
-    if (!friendEmail.trim()) {
-      alert('Please enter an email address');
+    const email = normalizeEmail(friendEmail);
+    if (!email) {
+      notifyError('Please enter an email address');
       return;
     }
 
     if (!currentUser) return;
 
     try {
-      const friendUser = await getUserByEmail(friendEmail);
+      const friendUser = await getUserByEmail(email);
       
       if (!friendUser) {
-        alert('User not found. Make sure they have an account.');
+        notifyError('User not found. Make sure they have an account.');
         return;
       }
 
       if (friendUser.id === currentUser.id) {
-        alert('You cannot add yourself as a friend');
+        notifyError('You cannot add yourself as a friend');
         return;
       }
 
       if (friends.some(f => f.id === friendUser.id)) {
-        alert('This user is already your friend');
+        notifyError('This user is already your friend');
         return;
       }
 
@@ -870,22 +886,22 @@ export default function ExpenseSplitApp() {
       setFriends([...friends, friendUser as User]);
       setFriendEmail('');
       navigateTo('dashboard');
-      alert('Friend added successfully!');
+      notifySuccess('Friend added successfully!', 'group');
     } catch (error: any) {
       console.error('Error adding friend:', error);
-      alert(error.message || 'Failed to add friend');
+      notifyError(error.message || 'Failed to add friend');
     }
   };
 
   const handleAddExpense = async () => {
     if (!expenseDesc.trim() || !expenseAmount || !selectedPayer || selectedParticipants.length === 0) {
-      alert('Please fill in all fields');
+      notifyError('Please fill in all fields');
       return;
     }
 
     const amount = parseFloat(expenseAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount');
+      notifyError('Please enter a valid amount');
       return;
     }
 
@@ -900,7 +916,7 @@ export default function ExpenseSplitApp() {
       for (const participantId of selectedParticipants) {
         const customAmount = parseFloat(customSplits[participantId] || '0');
         if (isNaN(customAmount) || customAmount < 0) {
-          alert('Please enter valid amounts for all participants');
+          notifyError('Please enter valid amounts for all participants');
           return;
         }
         splitAmounts[participantId] = customAmount;
@@ -908,7 +924,7 @@ export default function ExpenseSplitApp() {
       }
       
       if (Math.abs(totalCustom - amount) > 0.01) {
-        alert(`Split amounts (₹${totalCustom.toFixed(2)}) must equal the total (₹${amount.toFixed(2)})`);
+        notifyError(`Split amounts (₹${totalCustom.toFixed(2)}) must equal the total (₹${amount.toFixed(2)})`);
         return;
       }
     }
@@ -935,7 +951,7 @@ export default function ExpenseSplitApp() {
         }
         
         cancelEditExpense();
-        alert('Expense updated successfully!');
+        notifySuccess('Expense updated successfully!', 'expense');
       } else {
         // Create new expense
         const newExpense = {
@@ -975,14 +991,15 @@ export default function ExpenseSplitApp() {
         addNotification({
           type: 'expense',
           message: 'Expense added successfully. Associated members will be notified.',
+          variant: 'success',
         });
         
         window.history.back();
-        alert('Expense added successfully!');
+        notifySuccess('Expense added successfully!', 'expense');
       }
     } catch (error: any) {
       console.error('Error with expense:', error);
-      alert(error.message || 'Failed to save expense');
+      notifyError(error.message || 'Failed to save expense');
     }
   };
 
@@ -1028,10 +1045,10 @@ export default function ExpenseSplitApp() {
         await loadUserExpenses();
       }
       
-      alert('Settlement recorded successfully!');
+      notifySuccess('Settlement recorded successfully!', 'settlement');
     } catch (error) {
       console.error('Error settling up:', error);
-      alert('Failed to settle up');
+      notifyError('Failed to settle up');
     }
   };
 
@@ -1121,7 +1138,7 @@ export default function ExpenseSplitApp() {
       }
     } catch (error) {
       console.error('Error deleting expense:', error);
-      alert('Failed to delete expense');
+      notifyError('Failed to delete expense');
     }
   };
 
@@ -1171,10 +1188,10 @@ export default function ExpenseSplitApp() {
       setSelectedGroup(null);
       setGroupExpenses([]);
       navigateTo('dashboard');
-      alert('Group deleted successfully');
+      notifySuccess('Group deleted successfully', 'group');
     } catch (error) {
       console.error('Error deleting group:', error);
-      alert('Failed to delete group');
+      notifyError('Failed to delete group');
     }
   };
 
@@ -1187,18 +1204,24 @@ export default function ExpenseSplitApp() {
   };
 
   const handleJoinGroup = async () => {
-    if (!joinGroupId.trim()) {
-      alert('Please enter a group ID');
+    const groupId = joinGroupId.trim();
+    if (!groupId) {
+      notifyError('Please enter a group ID');
+      return;
+    }
+
+    if (!isUuid(groupId)) {
+      notifyError('Please enter a valid group ID');
       return;
     }
     
     if (!currentUser) return;
     
     try {
-      const groupData = await getGroup(joinGroupId.trim());
+      const groupData = await getGroup(groupId);
       
       if (!groupData) {
-        alert('Group not found. Please check the group ID.');
+        notifyError('Group not found. Please check the group ID.');
         return;
       }
       
@@ -1206,39 +1229,39 @@ export default function ExpenseSplitApp() {
       
       // Check if already a member
       if (group.members.includes(currentUser.id)) {
-        alert('You are already a member of this group');
+        notifyError('You are already a member of this group');
         return;
       }
       
       // Add user to group
       const updatedMembers = [...group.members, currentUser.id];
-      await updateGroup(joinGroupId.trim(), { members: updatedMembers });
+      await updateGroup(groupId, { members: updatedMembers });
       
       // Update local state
       await loadUserData();
       setJoinGroupId('');
       setShowJoinLinkModal(false);
-      alert(`Successfully joined ${group.name}!`);
+      notifySuccess(`Successfully joined ${group.name}!`, 'group');
     } catch (error) {
       console.error('Error joining group:', error);
-      alert('Failed to join group');
+      notifyError('Failed to join group');
     }
   };
 
   const copyGroupLink = (groupId: string) => {
     const link = `${window.location.origin}?join=${groupId}`;
     navigator.clipboard.writeText(link).then(() => {
-      alert('Group link copied to clipboard!');
+      notifySuccess('Group link copied to clipboard!', 'group');
     }).catch(() => {
-      alert('Failed to copy link. Group ID: ' + groupId);
+      notifyError('Failed to copy link. Group ID: ' + groupId);
     });
   };
 
   const copyGroupId = (groupId: string) => {
     navigator.clipboard.writeText(groupId).then(() => {
-      alert('Group ID copied to clipboard!');
+      notifySuccess('Group ID copied to clipboard!', 'group');
     }).catch(() => {
-      alert('Failed to copy. Group ID: ' + groupId);
+      notifyError('Failed to copy. Group ID: ' + groupId);
     });
   };
 
@@ -1258,10 +1281,10 @@ export default function ExpenseSplitApp() {
       });
       
       setCurrentUser({ ...currentUser, name: newName });
-      alert('Profile updated successfully!');
+      notifySuccess('Profile updated successfully!', 'group');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile');
+      notifyError('Failed to update profile');
       throw error;
     }
   };
@@ -1277,7 +1300,6 @@ export default function ExpenseSplitApp() {
 
   // Home Page View (before login)
   if (view === 'home') {
-    console.log('Rendering HomePage');
     return (
       <>
         <HomePage onGetStarted={() => navigateTo('login')} />
@@ -1400,6 +1422,7 @@ export default function ExpenseSplitApp() {
           setView={navigateTo}
           formatDateTime={formatDateTime}
           onDeleteFeedback={loadFeedbacks}
+          notify={notify}
         />
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
@@ -1513,6 +1536,7 @@ export default function ExpenseSplitApp() {
           getUserByEmail={getUserByEmail}
           updateGroup={updateGroup}
           onBack={() => window.history.back()}
+          notify={notify}
         />
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>

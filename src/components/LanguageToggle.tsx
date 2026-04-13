@@ -25,6 +25,7 @@ export function LanguageToggle({ isDarkTheme = false, className = '' }: Language
           : 'bg-white text-gray-700 hover:bg-gray-100'
       } ${className}`}
       title={i18n.language === 'en' ? 'Switch to Hindi' : 'अंग्रेज़ी में बदलें'}
+      aria-label={i18n.language === 'en' ? 'Switch language to Hindi' : 'भाषा अंग्रेज़ी में बदलें'}
     >
       <Languages className="w-4 h-4 sm:w-5 sm:h-5" />
       <span className="text-xs sm:text-sm font-semibold">{currentLanguageLabel}</span>

@@ -19,6 +19,7 @@ interface ManageMembersViewProps {
   getUserByEmail: (email: string) => Promise<User | null>;
   updateGroup: (groupId: string, payload: Partial<Group>) => Promise<void>;
   onBack: () => void;
+  notify: (message: string, variant?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export function ManageMembersView(props: ManageMembersViewProps) {
@@ -39,6 +40,7 @@ export function ManageMembersView(props: ManageMembersViewProps) {
     getUserByEmail,
     updateGroup,
     onBack,
+    notify,
   } = props;
 
   return (
@@ -122,15 +124,15 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                     try {
                       const user = await getUserByEmail(tempMemberEmail);
                       if (!user) {
-                        alert(t('members.userNotFound'));
+                        notify(t('members.userNotFound'), 'error');
                         return;
                       }
                       if (user.id === currentUser.id) {
-                        alert(t('members.cannotAddSelf'));
+                        notify(t('members.cannotAddSelf'), 'error');
                         return;
                       }
                       if (selectedGroup.members.includes(user.id)) {
-                        alert(t('members.alreadyInGroup'));
+                        notify(t('members.alreadyInGroup'), 'error');
                         return;
                       }
                       const updatedMembers = [...selectedGroup.members, user.id];
@@ -142,10 +144,10 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                       setSelectedGroup(updatedGroup);
                       setGroups(groups.map((g) => (g.id === selectedGroup.id ? updatedGroup : g)));
                       setTempMemberEmail('');
-                      alert(t('members.memberAdded'));
+                      notify(t('members.memberAdded'), 'success');
                     } catch (error) {
                       console.error('Error adding member:', error);
-                      alert(t('members.addMemberError'));
+                      notify(t('members.addMemberError'), 'error');
                     }
                   }
                 }}
@@ -162,15 +164,15 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                   try {
                     const user = await getUserByEmail(tempMemberEmail);
                     if (!user) {
-                      alert(t('members.userNotFound'));
+                      notify(t('members.userNotFound'), 'error');
                       return;
                     }
                     if (user.id === currentUser.id) {
-                      alert(t('members.cannotAddSelf'));
+                      notify(t('members.cannotAddSelf'), 'error');
                       return;
                     }
                     if (selectedGroup.members.includes(user.id)) {
-                      alert(t('members.alreadyInGroup'));
+                      notify(t('members.alreadyInGroup'), 'error');
                       return;
                     }
                     const updatedMembers = [...selectedGroup.members, user.id];
@@ -182,10 +184,10 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                     setSelectedGroup(updatedGroup);
                     setGroups(groups.map((g) => (g.id === selectedGroup.id ? updatedGroup : g)));
                     setTempMemberEmail('');
-                    alert(t('members.memberAdded'));
+                    notify(t('members.memberAdded'), 'success');
                   } catch (error) {
                     console.error('Error adding member:', error);
-                    alert(t('members.addMemberError'));
+                    notify(t('members.addMemberError'), 'error');
                   }
                 }}
                 className={`px-4 py-2 rounded-lg text-sm sm:text-base whitespace-nowrap transition ${
@@ -237,10 +239,10 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                             try {
                               await addFriend(currentUser.id, memberId);
                               setFriends([...friends, member as User]);
-                              alert(t('members.friendAdded'));
+                              notify(t('members.friendAdded'), 'success');
                             } catch (error) {
                               console.error('Error adding friend:', error);
-                              alert(t('members.addFriendError'));
+                              notify(t('members.addFriendError'), 'error');
                             }
                           }}
                           className={`text-xs sm:text-sm font-medium px-2 py-1 rounded transition ${
@@ -261,10 +263,10 @@ export function ManageMembersView(props: ManageMembersViewProps) {
                                 const updatedMembers = selectedGroup.members.filter((id) => id !== memberId);
                                 setSelectedGroup({ ...selectedGroup, members: updatedMembers });
                                 setGroups(groups.map((g) => (g.id === selectedGroup.id ? { ...g, members: updatedMembers } : g)));
-                                alert(t('members.memberRemoved'));
+                                notify(t('members.memberRemoved'), 'success');
                               } catch (error) {
                                 console.error('Error removing member:', error);
-                                alert(t('members.removeMemberError'));
+                                notify(t('members.removeMemberError'), 'error');
                               }
                             }
                           }}

@@ -9,9 +9,10 @@ interface AdminPanelViewProps {
   setView: (view: string) => void;
   formatDateTime: (dateInput: any) => string;
   onDeleteFeedback: () => Promise<void>;
+  notify: (message: string, variant?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-export function AdminPanelView({ isDarkTheme, feedbacks, setView, formatDateTime, onDeleteFeedback }: AdminPanelViewProps) {
+export function AdminPanelView({ isDarkTheme, feedbacks, setView, formatDateTime, onDeleteFeedback, notify }: AdminPanelViewProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const handleDeleteFeedback = async (feedbackId: string, userName?: string) => {
@@ -24,7 +25,7 @@ export function AdminPanelView({ isDarkTheme, feedbacks, setView, formatDateTime
     if (result.success) {
       await onDeleteFeedback(); // Refresh feedbacks list
     } else {
-      alert(`Failed to delete feedback: ${result.error}`);
+      notify(`Failed to delete feedback: ${result.error}`, 'error');
     }
     setDeletingId(null);
   };

@@ -33,4 +33,5 @@ export interface Notification {
   message: string;
   type: 'expense' | 'settlement' | 'group';
   timestamp: number;
+  variant?: 'success' | 'error' | 'info' | 'warning';
 }
