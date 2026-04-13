@@ -1466,6 +1466,9 @@ export default function ExpenseSplitApp() {
             handleJoinGroup={handleJoinGroup}
             setShowFeedbackModal={setShowFeedbackModal}
             isAdmin={isAdmin}
+            pushSupported={pushSupported}
+            pushEnabled={pushEnabled}
+            onTogglePushNotifications={handleTogglePushNotifications}
           />
           {showFeedbackModal && (
             <FeedbackModal

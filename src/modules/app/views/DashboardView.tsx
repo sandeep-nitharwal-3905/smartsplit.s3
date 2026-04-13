@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeftRight, Link as LinkIcon, LogOut, MessageSquare, Moon, Sun, User, Users } from 'lucide-react';
+import { ArrowLeftRight, Bell, Link as LinkIcon, LogOut, MessageSquare, Moon, Sun, User, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Expense, Group, User as AppUser } from '../types';
 
@@ -48,6 +48,9 @@ interface DashboardViewProps {
   handleJoinGroup: () => Promise<void>;
   setShowFeedbackModal: (value: boolean) => void;
   isAdmin: boolean;
+  pushSupported: boolean;
+  pushEnabled: boolean;
+  onTogglePushNotifications: () => Promise<void>;
 }
 
 export function DashboardView(props: DashboardViewProps) {
@@ -83,6 +86,9 @@ export function DashboardView(props: DashboardViewProps) {
     handleJoinGroup,
     setShowFeedbackModal,
     isAdmin,
+    pushSupported,
+    pushEnabled,
+    onTogglePushNotifications,
   } = props;
 
   const createCelebrationParticles = (): CelebrationParticle[] =>
@@ -313,6 +319,23 @@ export function DashboardView(props: DashboardViewProps) {
               <div className="text-xs opacity-90">Enter group ID or link</div>
             </div>
           </button>
+
+          {pushSupported && !pushEnabled && (
+            <button
+              onClick={onTogglePushNotifications}
+              className={`sm:col-span-2 p-4 rounded-lg shadow-lg transition-all flex items-center justify-center gap-3 text-white ${
+                isDarkTheme
+                  ? 'bg-gradient-to-r from-cyan-700 to-blue-700 hover:from-cyan-600 hover:to-blue-600'
+                  : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600'
+              }`}
+            >
+              <Bell className="w-6 h-6" />
+              <div className="text-left">
+                <div className="font-bold text-base sm:text-lg">Enable mobile notifications</div>
+                <div className="text-xs opacity-90">Get expense alerts even when the app is closed.</div>
+              </div>
+            </button>
+          )}
 
         </div>
 

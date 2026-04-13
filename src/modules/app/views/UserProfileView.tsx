@@ -186,6 +186,7 @@ export function UserProfileView({
                   PWA Notifications
                 </label>
                 <button
+                  type="button"
                   onClick={onTogglePushNotifications}
                   disabled={isPushActionLoading}
                   className={`w-full p-3 rounded-lg border transition text-left ${
@@ -194,30 +195,33 @@ export function UserProfileView({
                       : 'border-gray-300 bg-gray-100 hover:bg-gray-200 disabled:opacity-70'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
                       <div className={`text-sm font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        {pushEnabled ? 'Disable notifications' : 'Enable notifications'}
+                        {pushEnabled ? 'Notifications on' : 'Notifications off'}
                       </div>
                       <p className={`text-xs mt-1 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                         {pushEnabled
                           ? 'Turn off expense alerts on this device.'
-                          : 'Get expense alerts even when the app is closed.'}
+                          : 'Enable expense alerts for this device.'}
                       </p>
                     </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    <div
+                      className={`relative h-7 w-12 rounded-full transition ${
                         pushEnabled
-                          ? isDarkTheme
-                            ? 'bg-emerald-900/60 text-emerald-300'
-                            : 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-emerald-500'
                           : isDarkTheme
-                            ? 'bg-gray-600 text-gray-200'
-                            : 'bg-gray-200 text-gray-700'
-                      }`}
+                            ? 'bg-gray-600'
+                            : 'bg-gray-300'
+                      } ${isPushActionLoading ? 'opacity-70' : ''}`}
+                      aria-hidden="true"
                     >
-                      {pushEnabled ? 'On' : 'Off'}
-                    </span>
+                      <div
+                        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                          pushEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </div>
                   </div>
                 </button>
               </div>
