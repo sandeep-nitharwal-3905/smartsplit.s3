@@ -21,12 +21,19 @@ import {
 } from 'lucide-react';
 import { LanguageToggle } from './LanguageToggle';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 interface HomePageProps {
   onGetStarted: () => void;
 }
 
 export default function HomePage({ onGetStarted }: HomePageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -41,6 +48,41 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
     }
     descriptionTag.setAttribute('content', description);
   }, []);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    if (isStandalone) return;
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredPrompt(event as BeforeInstallPromptEvent);
+      setShowInstallPrompt(true);
+    };
+
+    const handleAppInstalled = () => {
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (!deferredPrompt) return;
+
+    await deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      setShowInstallPrompt(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   const highlights = [
     'Real-time group balances',
@@ -138,6 +180,38 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
         </div>
       </nav>
 
+      {showInstallPrompt && (
+        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto rounded-2xl border border-teal-200 bg-slate-950 text-white shadow-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-xl bg-teal-500/20 p-2">
+                <Smartphone className="w-5 h-5 text-teal-300" />
+              </div>
+              <div>
+                <p className="font-bold text-base sm:text-lg">Install SmartSplit for a better mobile experience</p>
+                <p className="text-sm sm:text-base text-slate-300">
+                  Add the app to your home screen for faster access, smoother navigation, and offline-friendly use.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowInstallPrompt(false)}
+                className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-900"
+              >
+                Not now
+              </button>
+              <button
+                onClick={handleInstallPwa}
+                className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-slate-100"
+              >
+                Install app
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="pt-28 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -205,6 +279,9 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                 <img
                   src="/Clean_UI_dashboard.png"
                   alt="SmartSplit dashboard showing balances and expenses"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="rounded-2xl w-full"
                 />
               </div>
@@ -350,6 +427,8 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                 <img
                   src="/Friendly_illustration.png"
                   alt="Create group in SmartSplit"
+                  loading="lazy"
+                  decoding="async"
                   className="rounded-xl shadow-lg mx-auto w-48 h-48 object-cover"
                 />
               </div>
@@ -365,6 +444,8 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                 <img
                   src="/Minimalist_abstract.png"
                   alt="Add expenses in SmartSplit"
+                  loading="lazy"
+                  decoding="async"
                   className="rounded-xl shadow-lg mx-auto w-48 h-48 object-cover"
                 />
               </div>
@@ -380,6 +461,8 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                 <img
                   src="/Abstract_pastel_grad.png"
                   alt="Settle up in SmartSplit"
+                  loading="lazy"
+                  decoding="async"
                   className="rounded-xl shadow-lg mx-auto w-48 h-48 object-cover"
                 />
               </div>
@@ -451,6 +534,8 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <img
                 src="/Clean_UI_dashboard.png"
                 alt="SmartSplit app interface"
+                loading="lazy"
+                decoding="async"
                 className="relative rounded-2xl shadow-2xl border-4 border-white"
               />
             </div>

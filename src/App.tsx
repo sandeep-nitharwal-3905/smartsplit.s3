@@ -1,17 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import HomePage from './components/HomePage';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { NotificationToast } from './modules/app/components/NotificationToast';
-import { FeedbackModal } from './modules/app/components/FeedbackModal';
-import { AddExpenseView } from './modules/app/views/AddExpenseView';
-import { AddFriendView } from './modules/app/views/AddFriendView';
-import { AddGroupView } from './modules/app/views/AddGroupView';
-import { DashboardView } from './modules/app/views/DashboardView';
-import { GroupDetailView } from './modules/app/views/GroupDetailView';
-import { LoginView } from './modules/app/views/LoginView';
-import { ResetPasswordView } from './modules/app/views/ResetPasswordView';
-import { ManageMembersView } from './modules/app/views/ManageMembersView';
-import { UserProfileView } from './modules/app/views/UserProfileView';
-import { AdminPanelView } from './modules/app/views/AdminPanelView';
 import type { Group, User, Expense, Notification } from './modules/app/types';
 import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword } from './modules/auth/authService';
 import {
@@ -48,6 +36,19 @@ import {
   isPushSupported,
   subscribeToPush,
 } from './modules/push/pwaPush';
+
+const HomePage = lazy(() => import('./components/HomePage'));
+const FeedbackModal = lazy(() => import('./modules/app/components/FeedbackModal').then((m) => ({ default: m.FeedbackModal })));
+const AddExpenseView = lazy(() => import('./modules/app/views/AddExpenseView').then((m) => ({ default: m.AddExpenseView })));
+const AddFriendView = lazy(() => import('./modules/app/views/AddFriendView').then((m) => ({ default: m.AddFriendView })));
+const AddGroupView = lazy(() => import('./modules/app/views/AddGroupView').then((m) => ({ default: m.AddGroupView })));
+const DashboardView = lazy(() => import('./modules/app/views/DashboardView').then((m) => ({ default: m.DashboardView })));
+const GroupDetailView = lazy(() => import('./modules/app/views/GroupDetailView').then((m) => ({ default: m.GroupDetailView })));
+const LoginView = lazy(() => import('./modules/app/views/LoginView').then((m) => ({ default: m.LoginView })));
+const ResetPasswordView = lazy(() => import('./modules/app/views/ResetPasswordView').then((m) => ({ default: m.ResetPasswordView })));
+const ManageMembersView = lazy(() => import('./modules/app/views/ManageMembersView').then((m) => ({ default: m.ManageMembersView })));
+const UserProfileView = lazy(() => import('./modules/app/views/UserProfileView').then((m) => ({ default: m.UserProfileView })));
+const AdminPanelView = lazy(() => import('./modules/app/views/AdminPanelView').then((m) => ({ default: m.AdminPanelView })));
 
 export default function ExpenseSplitApp() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -494,38 +495,48 @@ export default function ExpenseSplitApp() {
       expense.participants.forEach(p => userIds.add(p));
     });
 
-    const cache = { ...memberCache };
-    for (const userId of userIds) {
-      if (!cache[userId] && userId !== currentUser?.id) {
+    const missingUserIds = Array.from(userIds).filter((userId) => userId !== currentUser?.id && !memberCache[userId]);
+    if (missingUserIds.length === 0) return;
+
+    const fetchedUsers = await Promise.all(
+      missingUserIds.map(async (userId) => {
         try {
           const users = await getUsers([userId]);
-          if (users && users.length > 0) {
-            cache[userId] = users[0] as User;
-          }
+          return users && users.length > 0 ? (users[0] as User) : null;
         } catch (error) {
           console.error('Error loading user:', userId, error);
+          return null;
         }
-      }
-    }
-    setMemberCache(cache);
+      })
+    );
+
+    setMemberCache((prev) => {
+      const next = { ...prev };
+      fetchedUsers.forEach((user) => {
+        if (user) next[user.id] = user;
+      });
+      return next;
+    });
   };
 
   const loadGroupMembers = async (group: Group) => {
     if (!group || !group.members || group.members.length === 0) return;
-    
-    const cache = { ...memberCache };
+
     const memberIdsToLoad = group.members.filter(
-      memberId => memberId !== currentUser?.id && !cache[memberId] && !friends.find(f => f.id === memberId)
+      memberId => memberId !== currentUser?.id && !memberCache[memberId] && !friends.find(f => f.id === memberId)
     );
 
     if (memberIdsToLoad.length === 0) return;
 
     try {
       const users = await getUsers(memberIdsToLoad);
-      users.forEach(user => {
-        cache[user.id] = user as User;
+      setMemberCache((prev) => {
+        const next = { ...prev };
+        users.forEach((user) => {
+          next[user.id] = user as User;
+        });
+        return next;
       });
-      setMemberCache(cache);
     } catch (error) {
       console.error('Error loading group members:', error);
     }
@@ -1341,6 +1352,12 @@ export default function ExpenseSplitApp() {
     }
   };
 
+  const viewFallback = (
+    <div className={`min-h-screen flex items-center justify-center ${isDarkTheme ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-cyan-900' : 'bg-gradient-to-br from-teal-400 to-blue-500'}`}>
+      <div className={`text-2xl font-semibold ${isDarkTheme ? 'text-cyan-400' : 'text-white'}`}>Loading view...</div>
+    </div>
+  );
+
   // Loading screen
   if (loading) {
     return (
@@ -1354,7 +1371,9 @@ export default function ExpenseSplitApp() {
   if (view === 'home') {
     return (
       <>
-        <HomePage onGetStarted={() => navigateTo('login')} />
+        <Suspense fallback={viewFallback}>
+          <HomePage onGetStarted={() => navigateTo('login')} />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1364,16 +1383,18 @@ export default function ExpenseSplitApp() {
   if (showResetPasswordForm) {
     return (
       <>
-        <ResetPasswordView
-          isDarkTheme={isDarkTheme}
-          toggleTheme={toggleTheme}
-          newPassword={newPassword}
-          setNewPassword={setNewPassword}
-          confirmPassword={confirmPassword}
-          setConfirmPassword={setConfirmPassword}
-          handleUpdatePassword={handleUpdatePassword}
-          passwordUpdated={passwordUpdated}
-        />
+        <Suspense fallback={viewFallback}>
+          <ResetPasswordView
+            isDarkTheme={isDarkTheme}
+            toggleTheme={toggleTheme}
+            newPassword={newPassword}
+            setNewPassword={setNewPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
+            handleUpdatePassword={handleUpdatePassword}
+            passwordUpdated={passwordUpdated}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1383,26 +1404,28 @@ export default function ExpenseSplitApp() {
   if (view === 'login') {
     return (
       <>
-        <LoginView
-          isDarkTheme={isDarkTheme}
-          toggleTheme={toggleTheme}
-          onBackToHome={() => navigateTo('home')}
-          isSignUp={isSignUp}
-          setIsSignUp={setIsSignUp}
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          name={name}
-          setName={setName}
-          emailVerificationSent={emailVerificationSent}
-          handleAuth={handleAuth}
-          handleGoogleSignIn={handleGoogleSignIn}
-          handleForgotPassword={handleForgotPassword}
-          showForgotPassword={showForgotPassword}
-          setShowForgotPassword={setShowForgotPassword}
-          resetPasswordSent={resetPasswordSent}
-        />
+        <Suspense fallback={viewFallback}>
+          <LoginView
+            isDarkTheme={isDarkTheme}
+            toggleTheme={toggleTheme}
+            onBackToHome={() => navigateTo('home')}
+            isSignUp={isSignUp}
+            setIsSignUp={setIsSignUp}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            name={name}
+            setName={setName}
+            emailVerificationSent={emailVerificationSent}
+            handleAuth={handleAuth}
+            handleGoogleSignIn={handleGoogleSignIn}
+            handleForgotPassword={handleForgotPassword}
+            showForgotPassword={showForgotPassword}
+            setShowForgotPassword={setShowForgotPassword}
+            resetPasswordSent={resetPasswordSent}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1412,47 +1435,49 @@ export default function ExpenseSplitApp() {
   if (view === 'dashboard') {
     return (
       <>
-        <DashboardView
-          isDarkTheme={isDarkTheme}
-          toggleTheme={toggleTheme}
-          currentUser={currentUser}
-          groups={groups}
-          friends={friends}
-          balances={balances}
-          expenses={expenses}
-          setView={navigateTo}
-          setSelectedGroup={(group) => {
-            setSelectedGroup(group);
-            setIsEditingGroupName(false);
-            setEditGroupName('');
-          }}
-          handleLogout={handleLogout}
-          handleSettleUp={handleSettleUp}
-          getUserName={getUserName}
-          formatDateTime={formatDateTime}
-          startEditExpense={startEditExpense}
-          deleteExpense={deleteExpense}
-          copyGroupLink={copyGroupLink}
-          copyGroupId={copyGroupId}
-          showJoinLinkModal={showJoinLinkModal}
-          setShowJoinLinkModal={setShowJoinLinkModal}
-          joinGroupId={joinGroupId}
-          setJoinGroupId={setJoinGroupId}
-          handleJoinGroup={handleJoinGroup}
-          setShowFeedbackModal={setShowFeedbackModal}
-          isAdmin={isAdmin}
-          pushSupported={pushSupported}
-          pushEnabled={pushEnabled}
-          onEnablePushNotifications={handleEnablePushNotifications}
-        />
-        {showFeedbackModal && (
-          <FeedbackModal
+        <Suspense fallback={viewFallback}>
+          <DashboardView
             isDarkTheme={isDarkTheme}
-            onClose={() => setShowFeedbackModal(false)}
-            onSubmit={handleSubmitFeedback}
+            toggleTheme={toggleTheme}
             currentUser={currentUser}
+            groups={groups}
+            friends={friends}
+            balances={balances}
+            expenses={expenses}
+            setView={navigateTo}
+            setSelectedGroup={(group) => {
+              setSelectedGroup(group);
+              setIsEditingGroupName(false);
+              setEditGroupName('');
+            }}
+            handleLogout={handleLogout}
+            handleSettleUp={handleSettleUp}
+            getUserName={getUserName}
+            formatDateTime={formatDateTime}
+            startEditExpense={startEditExpense}
+            deleteExpense={deleteExpense}
+            copyGroupLink={copyGroupLink}
+            copyGroupId={copyGroupId}
+            showJoinLinkModal={showJoinLinkModal}
+            setShowJoinLinkModal={setShowJoinLinkModal}
+            joinGroupId={joinGroupId}
+            setJoinGroupId={setJoinGroupId}
+            handleJoinGroup={handleJoinGroup}
+            setShowFeedbackModal={setShowFeedbackModal}
+            isAdmin={isAdmin}
+            pushSupported={pushSupported}
+            pushEnabled={pushEnabled}
+            onEnablePushNotifications={handleEnablePushNotifications}
           />
-        )}
+          {showFeedbackModal && (
+            <FeedbackModal
+              isDarkTheme={isDarkTheme}
+              onClose={() => setShowFeedbackModal(false)}
+              onSubmit={handleSubmitFeedback}
+              currentUser={currentUser}
+            />
+          )}
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1468,14 +1493,16 @@ export default function ExpenseSplitApp() {
     
     return (
       <>
-        <AdminPanelView
-          isDarkTheme={isDarkTheme}
-          feedbacks={feedbacks}
-          setView={navigateTo}
-          formatDateTime={formatDateTime}
-          onDeleteFeedback={loadFeedbacks}
-          notify={notify}
-        />
+        <Suspense fallback={viewFallback}>
+          <AdminPanelView
+            isDarkTheme={isDarkTheme}
+            feedbacks={feedbacks}
+            setView={navigateTo}
+            formatDateTime={formatDateTime}
+            onDeleteFeedback={loadFeedbacks}
+            notify={notify}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1485,12 +1512,14 @@ export default function ExpenseSplitApp() {
   if (view === 'profile') {
     return (
       <>
-        <UserProfileView
-          isDarkTheme={isDarkTheme}
-          currentUser={currentUser}
-          setView={navigateTo}
-          onUpdateProfile={handleUpdateProfile}
-        />
+        <Suspense fallback={viewFallback}>
+          <UserProfileView
+            isDarkTheme={isDarkTheme}
+            currentUser={currentUser}
+            setView={navigateTo}
+            onUpdateProfile={handleUpdateProfile}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1500,39 +1529,41 @@ export default function ExpenseSplitApp() {
   if (view === 'groupDetail' && selectedGroup) {
     return (
       <>
-        <GroupDetailView
-          isDarkTheme={isDarkTheme}
-          currentUser={currentUser}
-          selectedGroup={selectedGroup}
-          balances={balances}
-          expenses={groupExpenses}
-          getUserName={getUserName}
-          formatDateTime={formatDateTime}
-          handleSettleUp={handleSettleUp}
-          startEditExpense={startEditExpense}
-          deleteExpense={deleteExpense}
-          handleLogout={handleLogout}
-          onBack={() => {
-            setGroupExpenses([]);
-            setSelectedGroup(null);
-            setIsEditingGroupName(false);
-            setEditGroupName('');
-            window.history.back();
-          }}
-          onAddExpense={() => {
-            if (selectedGroup) loadGroupMembers(selectedGroup);
-            navigateTo('addExpense');
-          }}
-          onManageMembers={() => navigateTo('manageGroupMembers')}
-          onCopyGroupLink={copyGroupLink}
-          onCopyGroupId={copyGroupId}
-          onDeleteGroup={handleDeleteGroup}
-          isEditingGroupName={isEditingGroupName}
-          editGroupName={editGroupName}
-          setIsEditingGroupName={setIsEditingGroupName}
-          setEditGroupName={setEditGroupName}
-          onRenameGroup={handleRenameGroup}
-        />
+        <Suspense fallback={viewFallback}>
+          <GroupDetailView
+            isDarkTheme={isDarkTheme}
+            currentUser={currentUser}
+            selectedGroup={selectedGroup}
+            balances={balances}
+            expenses={groupExpenses}
+            getUserName={getUserName}
+            formatDateTime={formatDateTime}
+            handleSettleUp={handleSettleUp}
+            startEditExpense={startEditExpense}
+            deleteExpense={deleteExpense}
+            handleLogout={handleLogout}
+            onBack={() => {
+              setGroupExpenses([]);
+              setSelectedGroup(null);
+              setIsEditingGroupName(false);
+              setEditGroupName('');
+              window.history.back();
+            }}
+            onAddExpense={() => {
+              if (selectedGroup) loadGroupMembers(selectedGroup);
+              navigateTo('addExpense');
+            }}
+            onManageMembers={() => navigateTo('manageGroupMembers')}
+            onCopyGroupLink={copyGroupLink}
+            onCopyGroupId={copyGroupId}
+            onDeleteGroup={handleDeleteGroup}
+            isEditingGroupName={isEditingGroupName}
+            editGroupName={editGroupName}
+            setIsEditingGroupName={setIsEditingGroupName}
+            setEditGroupName={setEditGroupName}
+            onRenameGroup={handleRenameGroup}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1542,22 +1573,24 @@ export default function ExpenseSplitApp() {
   if (view === 'addGroup') {
     return (
       <>
-        <AddGroupView
-          isDarkTheme={isDarkTheme}
-          groupName={groupName}
-          setGroupName={setGroupName}
-          friends={friends}
-          groupMembers={groupMembers}
-          setGroupMembers={setGroupMembers}
-          handleAddGroup={handleAddGroup}
-          showGroupCreatedModal={showGroupCreatedModal}
-          createdGroupId={createdGroupId}
-          copyGroupLink={copyGroupLink}
-          copyGroupId={copyGroupId}
-          setShowGroupCreatedModal={setShowGroupCreatedModal}
-          setView={navigateTo}
-          onBack={() => window.history.back()}
-        />
+        <Suspense fallback={viewFallback}>
+          <AddGroupView
+            isDarkTheme={isDarkTheme}
+            groupName={groupName}
+            setGroupName={setGroupName}
+            friends={friends}
+            groupMembers={groupMembers}
+            setGroupMembers={setGroupMembers}
+            handleAddGroup={handleAddGroup}
+            showGroupCreatedModal={showGroupCreatedModal}
+            createdGroupId={createdGroupId}
+            copyGroupLink={copyGroupLink}
+            copyGroupId={copyGroupId}
+            setShowGroupCreatedModal={setShowGroupCreatedModal}
+            setView={navigateTo}
+            onBack={() => window.history.back()}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1567,29 +1600,31 @@ export default function ExpenseSplitApp() {
   if (view === 'manageGroupMembers' && selectedGroup) {
     return (
       <>
-        <ManageMembersView
-          isDarkTheme={isDarkTheme}
-          friends={friends}
-          selectedGroup={selectedGroup}
-          currentUser={currentUser}
-          memberCache={memberCache}
-          setMemberCache={setMemberCache}
-          groups={groups}
-          setGroups={setGroups}
-          setSelectedGroup={(group) => {
-            setSelectedGroup(group);
-            if (group) loadGroupMembers(group);
-            setIsEditingGroupName(false);
-            setEditGroupName('');
-          }}
-          setFriends={setFriends}
-          tempMemberEmail={tempMemberEmail}
-          setTempMemberEmail={setTempMemberEmail}
-          getUserByEmail={getUserByEmail}
-          updateGroup={updateGroup}
-          onBack={() => window.history.back()}
-          notify={notify}
-        />
+        <Suspense fallback={viewFallback}>
+          <ManageMembersView
+            isDarkTheme={isDarkTheme}
+            friends={friends}
+            selectedGroup={selectedGroup}
+            currentUser={currentUser}
+            memberCache={memberCache}
+            setMemberCache={setMemberCache}
+            groups={groups}
+            setGroups={setGroups}
+            setSelectedGroup={(group) => {
+              setSelectedGroup(group);
+              if (group) loadGroupMembers(group);
+              setIsEditingGroupName(false);
+              setEditGroupName('');
+            }}
+            setFriends={setFriends}
+            tempMemberEmail={tempMemberEmail}
+            setTempMemberEmail={setTempMemberEmail}
+            getUserByEmail={getUserByEmail}
+            updateGroup={updateGroup}
+            onBack={() => window.history.back()}
+            notify={notify}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1599,14 +1634,16 @@ export default function ExpenseSplitApp() {
   if (view === 'addFriend') {
     return (
       <>
-        <AddFriendView
-          isDarkTheme={isDarkTheme}
-          friendEmail={friendEmail}
-          setFriendEmail={setFriendEmail}
-          handleAddFriend={handleAddFriend}
-          friends={friends}
-          onBack={() => window.history.back()}
-        />
+        <Suspense fallback={viewFallback}>
+          <AddFriendView
+            isDarkTheme={isDarkTheme}
+            friendEmail={friendEmail}
+            setFriendEmail={setFriendEmail}
+            handleAddFriend={handleAddFriend}
+            friends={friends}
+            onBack={() => window.history.back()}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
@@ -1616,29 +1653,31 @@ export default function ExpenseSplitApp() {
   if (view === 'addExpense') {
     return (
       <>
-        <AddExpenseView
-          isDarkTheme={isDarkTheme}
-          selectedGroup={selectedGroup}
-          currentUser={currentUser}
-          friends={friends}
-          memberCache={memberCache}
-          selectedParticipants={selectedParticipants}
-          setSelectedParticipants={setSelectedParticipants}
-          setView={navigateTo}
-          isEditMode={isEditMode}
-          cancelEditExpense={cancelEditExpense}
-          expenseDesc={expenseDesc}
-          setExpenseDesc={setExpenseDesc}
-          expenseAmount={expenseAmount}
-          setExpenseAmount={setExpenseAmount}
-          selectedPayer={selectedPayer}
-          setSelectedPayer={setSelectedPayer}
-          splitMode={splitMode}
-          setSplitMode={setSplitMode}
-          customSplits={customSplits}
-          setCustomSplits={setCustomSplits}
-          handleAddExpense={handleAddExpense}
-        />
+        <Suspense fallback={viewFallback}>
+          <AddExpenseView
+            isDarkTheme={isDarkTheme}
+            selectedGroup={selectedGroup}
+            currentUser={currentUser}
+            friends={friends}
+            memberCache={memberCache}
+            selectedParticipants={selectedParticipants}
+            setSelectedParticipants={setSelectedParticipants}
+            setView={navigateTo}
+            isEditMode={isEditMode}
+            cancelEditExpense={cancelEditExpense}
+            expenseDesc={expenseDesc}
+            setExpenseDesc={setExpenseDesc}
+            expenseAmount={expenseAmount}
+            setExpenseAmount={setExpenseAmount}
+            selectedPayer={selectedPayer}
+            setSelectedPayer={setSelectedPayer}
+            splitMode={splitMode}
+            setSplitMode={setSplitMode}
+            customSplits={customSplits}
+            setCustomSplits={setCustomSplits}
+            handleAddExpense={handleAddExpense}
+          />
+        </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>
     );
