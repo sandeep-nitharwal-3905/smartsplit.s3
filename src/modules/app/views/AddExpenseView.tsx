@@ -23,6 +23,7 @@ interface AddExpenseViewProps {
   customSplits: Record<string, string>;
   setCustomSplits: (splits: Record<string, string>) => void;
   handleAddExpense: () => Promise<void> | void;
+  isSavingExpense: boolean;
 }
 
 export function AddExpenseView(props: AddExpenseViewProps) {
@@ -49,6 +50,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
     customSplits,
     setCustomSplits,
     handleAddExpense,
+    isSavingExpense,
   } = props;
 
   let availableMembers: User[] = [];
@@ -346,9 +348,9 @@ export function AddExpenseView(props: AddExpenseViewProps) {
             {/* Support Message */}
             <button
               onClick={handleAddExpense}
-              disabled={selectedParticipants.length === 0}
+              disabled={selectedParticipants.length === 0 || isSavingExpense}
               className={`w-full py-2.5 sm:py-3 rounded-lg transition font-semibold text-sm sm:text-base ${
-                selectedParticipants.length === 0
+                selectedParticipants.length === 0 || isSavingExpense
                   ? isDarkTheme
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -357,7 +359,11 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                     : 'bg-teal-500 text-white hover:bg-teal-600'
               }`}
             >
-              {isEditMode ? t('expense.save').replace('Expense', '') : t('expense.addExpense')}
+              {isSavingExpense
+                ? 'Saving...'
+                : isEditMode
+                  ? t('expense.save').replace('Expense', '')
+                  : t('expense.addExpense')}
             </button>
 
             {isEditMode && (

@@ -69,13 +69,68 @@ export const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
   }));
 
   const { error: splitsError } = await supabase.from('expense_splits').insert(splitRows);
-  if (splitsError) throw splitsError;
+  if (splitsError) {
+    const { error: cleanupError } = await supabase.from('expenses').delete().eq('id', expenseId);
+    if (cleanupError) {
+      console.error('Failed to clean up expense after split insert error:', cleanupError);
+    }
+    throw splitsError;
+  }
 
   return { id: expenseId };
 };
 
 export const updateExpense = async (expenseId: string, expenseData: Partial<Expense>) => {
   const { participants, splitAmounts, groupId, ...rest } = expenseData;
+
+  const { data: originalExpenseRow, error: originalExpenseError } = await supabase
+    .from('expenses')
+    .select('description, amount, paid_by, group_id, created_by')
+    .eq('id', expenseId)
+    .single();
+
+  if (originalExpenseError) throw originalExpenseError;
+
+  const { data: originalSplitRows, error: originalSplitsError } = await supabase
+    .from('expense_splits')
+    .select('user_id, amount_owed')
+    .eq('expense_id', expenseId);
+
+  if (originalSplitsError) throw originalSplitsError;
+
+  const restoreOriginalState = async () => {
+    const { error: removeRestoredSplitsError } = await supabase
+      .from('expense_splits')
+      .delete()
+      .eq('expense_id', expenseId);
+
+    if (removeRestoredSplitsError) {
+      throw removeRestoredSplitsError;
+    }
+
+    if ((originalSplitRows || []).length > 0) {
+      const restoreSplitRows = (originalSplitRows || []).map((row: any) => ({
+        expense_id: expenseId,
+        user_id: row.user_id,
+        amount_owed: row.amount_owed,
+      }));
+
+      const { error: restoreSplitsError } = await supabase.from('expense_splits').insert(restoreSplitRows);
+      if (restoreSplitsError) throw restoreSplitsError;
+    }
+
+    const { error: restoreExpenseError } = await supabase
+      .from('expenses')
+      .update({
+        description: originalExpenseRow.description,
+        amount: originalExpenseRow.amount,
+        paid_by: originalExpenseRow.paid_by,
+        group_id: originalExpenseRow.group_id,
+      })
+      .eq('id', expenseId);
+
+    if (restoreExpenseError) throw restoreExpenseError;
+  };
 
   // If participants or splits are provided, sync expense_splits
   // with the new distribution using a delete + upsert strategy
@@ -113,7 +168,10 @@ export const updateExpense = async (expenseId: string, expenseData: Partial<Expe
         .eq('expense_id', expenseId)
         .in('user_id', toDelete);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        await restoreOriginalState();
+        throw deleteError;
+      }
     }
 
     // 3) Upsert desired splits to avoid unique-constraint errors even
@@ -129,7 +187,10 @@ export const updateExpense = async (expenseId: string, expenseData: Partial<Expe
         .from('expense_splits')
         .upsert(splitRows, { onConflict: 'expense_id,user_id' });
 
-      if (upsertError) throw upsertError;
+      if (upsertError) {
+        await restoreOriginalState();
+        throw upsertError;
+      }
     }
   }
 
@@ -147,7 +208,10 @@ export const updateExpense = async (expenseId: string, expenseData: Partial<Expe
     })
     .eq('id', expenseId);
 
-  if (error) throw error;
+  if (error) {
+    await restoreOriginalState();
+    throw error;
+  }
 };
 
 export const getGroupExpenses = async (groupId: string | null) => {
@@ -252,6 +316,15 @@ export const onUserExpensesChange = (
 };
 
 export const deleteExpense = async (expenseId: string) => {
-  const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
+  const { data, error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('id', expenseId)
+    .select('id');
+
   if (error) throw error;
+
+  if (!data || data.length === 0) {
+    throw new Error('Expense was not deleted. You may not have permission or the expense no longer exists.');
+  }
 };

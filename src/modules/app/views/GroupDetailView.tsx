@@ -13,6 +13,7 @@ interface GroupDetailViewProps {
   handleSettleUp: (fromId: string, toId: string, amount: number) => void;
   startEditExpense: (expense: Expense) => void;
   deleteExpense: (expenseId: string) => Promise<void>;
+  isDeletingExpense: (expenseId: string) => boolean;
   handleLogout: () => void;
   onBack: () => void;
   onAddExpense: () => void;
@@ -40,6 +41,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
     handleSettleUp,
     startEditExpense,
     deleteExpense,
+    isDeletingExpense,
     handleLogout,
     onBack,
     onAddExpense,
@@ -250,6 +252,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
             ) : (
               <div className="space-y-2">
                 {expenses.map((expense) => {
+                  const canManageExpense = currentUser?.id === expense.createdBy;
                   const userShare =
                     currentUser && expense.participants.includes(currentUser.id)
                       ? expense.splitAmounts && expense.splitAmounts[expense.participants[0]] !== undefined
@@ -321,21 +324,28 @@ export function GroupDetailView(props: GroupDetailViewProps) {
                             </div>
                           )}
                         </div>
-                        <div className="flex flex-col gap-1 flex-shrink-0 self-start">
-                          <button onClick={() => startEditExpense(expense)} className="p-1 hover:bg-blue-100 rounded" title="Edit expense">
-                            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-                          <button onClick={() => deleteExpense(expense.id)} className="p-1 hover:bg-red-100 rounded" title="Delete expense">
-                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
-                          </button>
-                        </div>
+                        {canManageExpense && (
+                          <div className="flex flex-col gap-1 flex-shrink-0 self-start">
+                            <button onClick={() => startEditExpense(expense)} className="p-1 hover:bg-blue-100 rounded" title="Edit expense">
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => deleteExpense(expense.id)}
+                              disabled={isDeletingExpense(expense.id)}
+                              className="p-1 hover:bg-red-100 rounded disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Delete expense"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

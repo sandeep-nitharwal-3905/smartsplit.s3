@@ -106,6 +106,8 @@ export default function ExpenseSplitApp() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const hasHydratedUserExpensesRef = useRef(false);
   const knownUserExpenseIdsRef = useRef<Set<string>>(new Set());
+  const [isExpenseSaving, setIsExpenseSaving] = useState(false);
+  const [deletingExpenseIds, setDeletingExpenseIds] = useState<string[]>([]);
 
   // Edit expense states
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -650,6 +652,8 @@ export default function ExpenseSplitApp() {
 
   const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
+  const isDeletingExpense = (expenseId: string) => deletingExpenseIds.includes(expenseId);
+
   // Auth handlers
   const handleAuth = async () => {
     if (!email || !password) {
@@ -955,6 +959,8 @@ export default function ExpenseSplitApp() {
   };
 
   const handleAddExpense = async () => {
+    if (isExpenseSaving) return;
+
     if (!expenseDesc.trim() || !expenseAmount || !selectedPayer || selectedParticipants.length === 0) {
       notifyError('Please fill in all fields');
       return;
@@ -991,6 +997,8 @@ export default function ExpenseSplitApp() {
     }
 
     try {
+      setIsExpenseSaving(true);
+
       if (isEditMode && editingExpense) {
         // Update expense
         const updatedExpense = {
@@ -1027,18 +1035,17 @@ export default function ExpenseSplitApp() {
         };
 
         const docRef = await createSupabaseExpense(newExpense);
-        const createdExpense = { id: docRef.id, ...newExpense } as Expense;
 
         const recipientUserIds = Array.from(
           new Set([...selectedParticipants, selectedPayer].filter((userId) => userId !== currentUser.id))
         );
 
-        sendExpensePushNotificationBestEffort(createdExpense, recipientUserIds);
+        sendExpensePushNotificationBestEffort({ id: docRef.id, ...newExpense } as Expense, recipientUserIds);
 
         if (selectedGroup) {
-          setGroupExpenses([...groupExpenses, createdExpense]);
+          await loadGroupExpenses();
         } else {
-          setExpenses([...expenses, createdExpense]);
+          await loadUserExpenses();
         }
         
         // Reset form
@@ -1061,6 +1068,8 @@ export default function ExpenseSplitApp() {
     } catch (error: any) {
       console.error('Error with expense:', error);
       notifyError(error.message || 'Failed to save expense');
+    } finally {
+      setIsExpenseSaving(false);
     }
   };
 
@@ -1190,16 +1199,24 @@ export default function ExpenseSplitApp() {
   };
 
   const deleteExpense = async (expenseId: string) => {
+    if (isDeletingExpense(expenseId)) return;
+
+    const confirmed = window.confirm('Delete this expense? This action cannot be undone.');
+    if (!confirmed) return;
+
     try {
+      setDeletingExpenseIds((prev) => [...prev, expenseId]);
       await deleteSupabaseExpense(expenseId);
       if (selectedGroup) {
-        setGroupExpenses(groupExpenses.filter(e => e.id !== expenseId));
+        await loadGroupExpenses();
       } else {
-        setExpenses(expenses.filter(e => e.id !== expenseId));
+        await loadUserExpenses();
       }
     } catch (error) {
       console.error('Error deleting expense:', error);
-      notifyError('Failed to delete expense');
+      notifyError(error instanceof Error ? error.message : 'Failed to delete expense');
+    } finally {
+      setDeletingExpenseIds((prev) => prev.filter((id) => id !== expenseId));
     }
   };
 
@@ -1546,6 +1563,7 @@ export default function ExpenseSplitApp() {
             handleSettleUp={handleSettleUp}
             startEditExpense={startEditExpense}
             deleteExpense={deleteExpense}
+            isDeletingExpense={isDeletingExpense}
             handleLogout={handleLogout}
             onBack={() => {
               setGroupExpenses([]);
@@ -1681,6 +1699,7 @@ export default function ExpenseSplitApp() {
             customSplits={customSplits}
             setCustomSplits={setCustomSplits}
             handleAddExpense={handleAddExpense}
+            isSavingExpense={isExpenseSaving}
           />
         </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
