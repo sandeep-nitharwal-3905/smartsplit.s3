@@ -1372,7 +1372,10 @@ export default function ExpenseSplitApp() {
     return (
       <>
         <Suspense fallback={viewFallback}>
-          <HomePage onGetStarted={() => navigateTo('login')} />
+          <HomePage
+            isAuthenticated={Boolean(currentUser)}
+            onPrimaryAction={() => navigateTo(currentUser ? 'dashboard' : 'login')}
+          />
         </Suspense>
         <NotificationToast notifications={notifications} isDarkTheme={isDarkTheme} onClose={removeNotification} />
       </>

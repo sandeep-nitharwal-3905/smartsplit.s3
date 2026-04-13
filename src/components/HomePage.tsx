@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   ArrowRight,
@@ -27,7 +27,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 interface HomePageProps {
-  onGetStarted: () => void;
+  isAuthenticated: boolean;
+  onPrimaryAction: () => void;
 }
 
 interface CelebrationParticle {
@@ -50,7 +51,7 @@ interface BlessingDrop {
   message: string;
 }
 
-export default function HomePage({ onGetStarted }: HomePageProps) {
+export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageProps) {
   const checkStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
@@ -61,7 +62,12 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
   const [isBlessingOpen, setIsBlessingOpen] = useState(false);
   const [celebrationParticles, setCelebrationParticles] = useState<CelebrationParticle[]>([]);
   const [blessingDrops, setBlessingDrops] = useState<BlessingDrop[]>([]);
+  const [redirectSecondsLeft, setRedirectSecondsLeft] = useState(3);
+  const onPrimaryActionRef = useRef(onPrimaryAction);
   const { t } = useTranslation();
+  const navPrimaryActionLabel = isAuthenticated ? 'Go to Dashboard' : t('nav.getStarted');
+  const heroPrimaryActionLabel = isAuthenticated ? 'Go to Dashboard' : 'Start Free Now';
+  const ctaPrimaryActionLabel = isAuthenticated ? 'Go to Dashboard' : 'Create Free Account';
 
   const devotionalMessages = [
     'Jay Sharee Khatu Shyam',
@@ -103,6 +109,32 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
     setCelebrationParticles([]);
     setBlessingDrops([]);
   };
+
+  useEffect(() => {
+    onPrimaryActionRef.current = onPrimaryAction;
+  }, [onPrimaryAction]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setRedirectSecondsLeft(3);
+      return;
+    }
+
+    setRedirectSecondsLeft(3);
+
+    const countdown = window.setInterval(() => {
+      setRedirectSecondsLeft((prev) => (prev > 1 ? prev - 1 : 1));
+    }, 1000);
+
+    const redirectTimer = window.setTimeout(() => {
+      onPrimaryActionRef.current();
+    }, 3000);
+
+    return () => {
+      window.clearInterval(countdown);
+      window.clearTimeout(redirectTimer);
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     document.title = 'SmartSplit - Split expenses smarter with friends, groups, and real-time balances';
@@ -352,10 +384,10 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <a href="#faq" className="text-gray-700 hover:text-teal-600 transition-colors">FAQ</a>
               <LanguageToggle className="" />
               <button
-                onClick={onGetStarted}
+                onClick={onPrimaryAction}
                 className="bg-gradient-to-r from-teal-500 to-blue-500 text-white px-6 py-2 rounded-full hover:from-teal-600 hover:to-blue-600 transition-all shadow-lg hover:shadow-xl"
               >
-                {t('nav.getStarted')}
+                {navPrimaryActionLabel}
               </button>
             </div>
 
@@ -375,10 +407,10 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
               <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="block text-gray-700 hover:text-teal-600 transition-colors py-2">FAQ</a>
               <LanguageToggle className="w-full justify-center" />
               <button
-                onClick={onGetStarted}
+                onClick={onPrimaryAction}
                 className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white px-6 py-2 rounded-full hover:from-teal-600 hover:to-blue-600 transition-all"
               >
-                {t('nav.getStarted')}
+                {navPrimaryActionLabel}
               </button>
             </div>
           )}
@@ -387,6 +419,20 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
 
       <header className="pt-28 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
+          {isAuthenticated && (
+            <div className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800 shadow-sm sm:flex sm:items-center sm:justify-between sm:text-base">
+              <p>
+                You are already signed in. Redirecting to dashboard in {redirectSecondsLeft}s.
+              </p>
+              <button
+                onClick={onPrimaryAction}
+                className="mt-2 inline-flex items-center rounded-full bg-teal-600 px-4 py-1.5 text-white transition hover:bg-teal-700 sm:mt-0"
+              >
+                Go Now
+              </button>
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 bg-white border border-teal-200 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm">
@@ -416,10 +462,10 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={onGetStarted}
+                  onClick={onPrimaryAction}
                   className="bg-gradient-to-r from-teal-500 to-blue-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-teal-600 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group"
                 >
-                  Start Free Now
+                  {heroPrimaryActionLabel}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
@@ -819,10 +865,10 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
             Join SmartSplit today and run your shared money life with confidence.
           </p>
           <button
-            onClick={onGetStarted}
+            onClick={onPrimaryAction}
             className="bg-white text-teal-600 px-8 sm:px-10 py-3 sm:py-4 rounded-full text-base sm:text-lg font-bold hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl inline-flex items-center gap-2 group"
           >
-            Create Free Account
+            {ctaPrimaryActionLabel}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="text-sm sm:text-base text-teal-100 mt-4">
