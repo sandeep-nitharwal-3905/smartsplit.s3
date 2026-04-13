@@ -258,7 +258,7 @@ export default function HomePage({ onGetStarted }: HomePageProps) {
                       <div>
                         <p className="font-bold text-slate-900 text-base sm:text-lg">Install PWA for a better experience</p>
                         <p className="text-sm sm:text-base text-slate-600">
-                          Save SmartSplit to your home screen for faster access and a more app-like experience.
+                          Save SmartSplit to your home screen for faster access and a smoother app-like experience.
                         </p>
                       </div>
                     </div>

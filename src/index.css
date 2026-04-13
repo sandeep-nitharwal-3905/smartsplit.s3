@@ -20,7 +20,7 @@ body,
 
 body {
   overscroll-behavior: none;
-  touch-action: pan-y;
+  touch-action: auto;
   margin: 0;
 }
 
