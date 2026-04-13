@@ -55,14 +55,28 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Invalid access token.' });
   }
 
-  const { recipientUserIds, title, body, url } = req.body || {};
+  let parsedBody: any = req.body || {};
+  if (typeof parsedBody === 'string') {
+    try {
+      parsedBody = JSON.parse(parsedBody);
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON body.' });
+    }
+  }
+
+  const { recipientUserIds, title, body, url, includeSender } = parsedBody;
 
   if (!Array.isArray(recipientUserIds) || recipientUserIds.length === 0) {
     return res.status(400).json({ error: 'recipientUserIds must be a non-empty array.' });
   }
 
+  const allowSender = Boolean(includeSender);
   const distinctRecipients = Array.from(
-    new Set(recipientUserIds.filter((id: unknown) => typeof id === 'string' && id !== user.id))
+    new Set(
+      recipientUserIds.filter(
+        (id: unknown) => typeof id === 'string' && (allowSender || id !== user.id)
+      )
+    )
   );
 
   if (!distinctRecipients.length) {
@@ -89,6 +103,7 @@ export default async function handler(req: any, res: any) {
   });
 
   let delivered = 0;
+  let failed = 0;
   const staleSubscriptionIds: string[] = [];
 
   for (const row of subscriptions || []) {
@@ -96,6 +111,7 @@ export default async function handler(req: any, res: any) {
       await webpush.sendNotification(buildSubscription(row), payload);
       delivered += 1;
     } catch (error: any) {
+      failed += 1;
       const statusCode = error?.statusCode;
       if (statusCode === 404 || statusCode === 410) {
         staleSubscriptionIds.push(row.id);
@@ -111,5 +127,6 @@ export default async function handler(req: any, res: any) {
     delivered,
     attempted: subscriptions?.length || 0,
     cleaned: staleSubscriptionIds.length,
+    errors: failed,
   });
 }

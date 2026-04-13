@@ -769,10 +769,58 @@ export default function ExpenseSplitApp() {
       setPushEnabled(true);
 
       notifySuccess('Push notifications enabled on this device.', 'group');
+
+      // Send a one-time self-test push so users can verify setup immediately.
+      const testResult = await triggerPushNotification({
+        recipientUserIds: [currentUser.id],
+        title: 'SmartSplit notifications enabled',
+        body: 'You will now receive expense updates on this device.',
+        url: '/#dashboard',
+        includeSender: true,
+      });
+
+      if ((testResult.delivered || 0) > 0) {
+        notifySuccess('Test push notification sent successfully.', 'group');
+      } else {
+        notify('Push enabled, but test delivery was not confirmed. Check Vercel env vars and Supabase push_subscriptions table.', 'warning');
+      }
     } catch (error: any) {
       console.error('Failed to enable push notifications:', error);
       notifyError(error?.message || 'Failed to enable push notifications');
     }
+  };
+
+  const triggerPushNotification = async (payload: {
+    recipientUserIds: string[];
+    title: string;
+    body: string;
+    url: string;
+    includeSender?: boolean;
+  }) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error('Missing active session token for push delivery request.');
+    }
+
+    const response = await fetch('/api/push-notify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => ({} as any));
+    if (!response.ok) {
+      const reason = data?.error || `Push API failed with status ${response.status}`;
+      throw new Error(reason);
+    }
+
+    return data as { delivered?: number; attempted?: number; cleaned?: number; errors?: number };
   };
 
   const sendExpensePushNotification = async (expense: {
@@ -783,32 +831,36 @@ export default function ExpenseSplitApp() {
     if (!currentUser || recipientUserIds.length === 0) return;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) return;
-
       const groupName = expense.groupId
         ? groups.find((group) => group.id === expense.groupId)?.name || 'your group'
         : 'SmartSplit';
 
-      await fetch('/api/push-notify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          recipientUserIds,
-          title: 'New expense added',
-          body: `${currentUser.name} added \"${expense.description}\" (Rs.${expense.amount.toFixed(2)}) in ${groupName}.`,
-          url: expense.groupId ? '/#groupDetail' : '/#dashboard',
-        }),
+      const result = await triggerPushNotification({
+        recipientUserIds,
+        title: 'New expense added',
+        body: `${currentUser.name} added \"${expense.description}\" (Rs.${expense.amount.toFixed(2)}) in ${groupName}.`,
+        url: expense.groupId ? '/#groupDetail' : '/#dashboard',
       });
-    } catch (error) {
+
+      if ((result.attempted || 0) === 0) {
+        notify('Expense saved, but no recipient device is subscribed for push yet.', 'warning');
+      } else if ((result.delivered || 0) === 0) {
+        notify('Expense saved, but push delivery failed for recipient devices.', 'warning');
+      }
+    } catch (error: any) {
       console.error('Failed to trigger expense push notifications:', error);
+      notify(`Expense saved, but push delivery failed: ${error?.message || 'unknown error'}`, 'warning');
     }
+  };
+
+  const sendExpensePushNotificationBestEffort = (expense: {
+    description: string;
+    amount: number;
+    groupId: string | null;
+  }, recipientUserIds: string[]) => {
+    void sendExpensePushNotification(expense, recipientUserIds).catch((error) => {
+      console.error('Unexpected push wrapper failure:', error);
+    });
   };
 
   const handleSubmitFeedback = async (feedbackData: { message: string; rating?: number }) => {
@@ -972,7 +1024,7 @@ export default function ExpenseSplitApp() {
           new Set([...selectedParticipants, selectedPayer].filter((userId) => userId !== currentUser.id))
         );
 
-        void sendExpensePushNotification(createdExpense, recipientUserIds);
+        sendExpensePushNotificationBestEffort(createdExpense, recipientUserIds);
 
         if (selectedGroup) {
           setGroupExpenses([...groupExpenses, createdExpense]);
