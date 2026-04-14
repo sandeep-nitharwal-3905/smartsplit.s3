@@ -439,29 +439,41 @@ export default function ExpenseSplitApp() {
 
   // Handle invite links like ?join=<groupId>
   useEffect(() => {
-    if (!currentUser) return;
-
     try {
       const search = window.location.search;
       if (!search) return;
 
       const params = new URLSearchParams(search);
       const joinParam = params.get('join');
+      if (!joinParam) return;
 
-      if (joinParam) {
-        setJoinGroupId(joinParam);
-        setShowJoinLinkModal(true);
-
-        if (view !== 'dashboard') {
-          navigateTo('dashboard');
+      // If a logged-out user opens an invite link, move them to login first
+      // and keep the group id so the join modal can open immediately after auth.
+      if (!currentUser) {
+        try {
+          sessionStorage.setItem('pendingJoin', joinParam);
+        } catch (error) {
+          console.error('Error storing pending join:', error);
         }
 
-        // Clean the URL so the modal doesn't reopen unnecessarily
-        params.delete('join');
-        const newSearch = params.toString();
-        const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
-        window.history.replaceState(null, '', newUrl);
+        if (view !== 'login') {
+          navigateTo('login');
+        }
+        return;
       }
+
+      setJoinGroupId(joinParam);
+      setShowJoinLinkModal(true);
+
+      if (view !== 'dashboard') {
+        navigateTo('dashboard');
+      }
+
+      // Clean the URL so the modal doesn't reopen unnecessarily
+      params.delete('join');
+      const newSearch = params.toString();
+      const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
+      window.history.replaceState(null, '', newUrl);
     } catch (error) {
       console.error('Error handling join link:', error);
     }
