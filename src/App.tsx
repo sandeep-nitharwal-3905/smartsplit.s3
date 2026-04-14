@@ -318,7 +318,18 @@ export default function ExpenseSplitApp() {
             setFriends([]);
             setExpenses([]);
             setGroupExpenses([]);
-            navigateTo('home');
+
+            const joinGroupId = getJoinGroupIdFromUrl();
+            if (joinGroupId) {
+              try {
+                sessionStorage.setItem('pendingJoin', joinGroupId);
+              } catch (error) {
+                console.error('Error storing pending join:', error);
+              }
+              navigateTo('login');
+            } else {
+              navigateTo('home');
+            }
             setLoading(false);
           }
         };
@@ -661,6 +672,15 @@ export default function ExpenseSplitApp() {
   };
 
   const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
+  const getJoinGroupIdFromUrl = () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('join');
+    } catch {
+      return null;
+    }
+  };
 
   const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
