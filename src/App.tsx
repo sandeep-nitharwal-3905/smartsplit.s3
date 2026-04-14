@@ -257,7 +257,16 @@ export default function ExpenseSplitApp() {
 
       try {
         const subscription = await getExistingPushSubscription();
-        setPushEnabled(Boolean(subscription));
+
+        if (!subscription) {
+          setPushEnabled(false);
+          return;
+        }
+
+        // Re-link an existing device subscription after login so
+        // users don't need to re-enable notifications every session.
+        await upsertPushSubscription(currentUser.id, subscription);
+        setPushEnabled(true);
       } catch (error) {
         console.error('Failed to read push subscription:', error);
         setPushEnabled(false);
@@ -780,10 +789,10 @@ export default function ExpenseSplitApp() {
         const existingSubscription = await getExistingPushSubscription();
         if (existingSubscription) {
           await deletePushSubscription(currentUser.id, existingSubscription.endpoint);
-          await existingSubscription.unsubscribe();
-          setPushEnabled(false);
         }
       }
+
+      setPushEnabled(false);
 
       await logoutUser();
     } catch (error: any) {
