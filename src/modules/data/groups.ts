@@ -150,6 +150,23 @@ export const updateGroup = async (groupId: string, groupData: Partial<Group>) =>
 };
 
 export const deleteGroup = async (groupId: string) => {
+  const { error: rpcError } = await supabase.rpc('delete_group_and_related_data', {
+    p_group_id: groupId,
+  });
+
+  if (!rpcError) {
+    return;
+  }
+
+  const isMissingRpcFunction =
+    rpcError.code === 'PGRST202' ||
+    rpcError.message?.includes('delete_group_and_related_data');
+
+  if (!isMissingRpcFunction) {
+    throw rpcError;
+  }
+
+  // Backward compatibility for environments that have not applied the SQL function yet.
   const { error } = await supabase.from('groups').delete().eq('id', groupId);
   if (error) throw error;
 };

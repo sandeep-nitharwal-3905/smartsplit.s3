@@ -192,6 +192,34 @@ as $$
   );
 $$;
 
+-- Helper: delete a group (and cascade related records) as its creator.
+create or replace function public.delete_group_and_related_data(p_group_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  if not exists (
+    select 1
+    from public.groups
+    where id = p_group_id
+      and created_by = auth.uid()
+  ) then
+    raise exception 'Only the group creator can delete this group' using errcode = '42501';
+  end if;
+
+  delete from public.groups where id = p_group_id;
+end;
+$$;
+
+revoke all on function public.delete_group_and_related_data(uuid) from public;
+grant execute on function public.delete_group_and_related_data(uuid) to authenticated;
+
 -- Allow adding members if you are the creator of the group OR adding yourself
 drop policy if exists "Admins can add members" on public.group_members;
 drop policy if exists "Add members" on public.group_members;
