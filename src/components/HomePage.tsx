@@ -51,6 +51,36 @@ interface BlessingDrop {
   message: string;
 }
 
+type InstallPlatform = 'ios' | 'android' | 'desktop' | 'other';
+
+const getInstallPlatform = (): InstallPlatform => {
+  if (typeof window === 'undefined') return 'other';
+
+  const userAgent = window.navigator.userAgent || '';
+  const isIos = /iPad|iPhone|iPod/.test(userAgent) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(userAgent);
+
+  if (isIos) return 'ios';
+  if (isAndroid) return 'android';
+  return 'desktop';
+};
+
+const getInstallHelpText = (platform: InstallPlatform, hasPrompt: boolean) => {
+  if (hasPrompt) {
+    return 'Tap Install PWA to open the browser prompt. If it does not appear, try again after a few seconds.';
+  }
+
+  if (platform === 'ios') {
+    return 'On iPhone or iPad, tap Share in Safari and then choose Add to Home Screen.';
+  }
+
+  if (platform === 'android') {
+    return 'On Android, open the browser menu in Chrome or Edge and choose Install app or Add to Home screen.';
+  }
+
+  return 'On desktop browsers, open the browser menu and choose Install app, Install SmartSplit, or Create shortcut.';
+};
+
 export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageProps) {
   const checkStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
@@ -65,6 +95,7 @@ export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageP
   const [redirectSecondsLeft, setRedirectSecondsLeft] = useState(3);
   const onPrimaryActionRef = useRef(onPrimaryAction);
   const { t } = useTranslation();
+  const installPlatform = getInstallPlatform();
   const navPrimaryActionLabel = isAuthenticated ? 'Go to Dashboard' : t('nav.getStarted');
   const heroPrimaryActionLabel = isAuthenticated ? 'Go to Dashboard' : 'Start Free Now';
   const ctaPrimaryActionLabel = isAuthenticated ? 'Go to Dashboard' : 'Create Free Account';
@@ -210,7 +241,7 @@ export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageP
     }
 
     if (!deferredPrompt) {
-      setShowInstallHelp(true);
+      setShowInstallHelp((prev) => !prev);
       return;
     }
 
@@ -503,6 +534,9 @@ export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageP
                         <p className="text-sm sm:text-base text-slate-600">
                           Save SmartSplit to your home screen for faster access and a smoother app-like experience.
                         </p>
+                        <p className="mt-1 text-xs sm:text-sm font-medium text-teal-700">
+                          Works on iPhone, Android, and desktop browsers.
+                        </p>
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -510,14 +544,14 @@ export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageP
                         onClick={handleInstallPwa}
                         className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
                       >
-                        {deferredPrompt ? 'Install PWA' : 'Open install steps'}
+                        {deferredPrompt ? 'Install PWA' : showInstallHelp ? 'Hide install steps' : 'See install steps'}
                       </button>
                       {deferredPrompt && (
                         <button
                           onClick={() => setShowInstallHelp((prev) => !prev)}
                           className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                         >
-                          How to install
+                          {showInstallHelp ? 'Hide install steps' : 'How to install'}
                         </button>
                       )}
                     </div>
@@ -525,14 +559,7 @@ export default function HomePage({ isAuthenticated, onPrimaryAction }: HomePageP
 
                   {showInstallHelp && (
                     <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                      {deferredPrompt ? (
-                        <p>Tap Install PWA to open the browser prompt. If it does not appear, try again after a few seconds.</p>
-                      ) : (
-                        <p>
-                          Your browser may use manual installation steps. On Chrome, open the browser menu and choose Install app.
-                          On Safari (iPhone), tap Share and then Add to Home Screen.
-                        </p>
-                      )}
+                      <p>{getInstallHelpText(installPlatform, Boolean(deferredPrompt))}</p>
                     </div>
                   )}
                 </div>
