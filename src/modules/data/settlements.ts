@@ -1,5 +1,6 @@
 import { supabase } from '../supabase/client';
 import type { Settlement } from './types';
+import { roundMoney } from '../shared/money';
 
 export const createSettlement = async (settlement: Omit<Settlement, 'id'>) => {
   const { data, error } = await supabase
@@ -7,7 +8,7 @@ export const createSettlement = async (settlement: Omit<Settlement, 'id'>) => {
     .insert({
       from_user: settlement.from,
       to_user: settlement.to,
-      amount: settlement.amount,
+      amount: roundMoney(settlement.amount),
       group_id: settlement.groupId,
     })
     .select('*')
@@ -28,7 +29,7 @@ export const getGroupSettlements = async (groupId: string | null) => {
     id: row.id,
     from: row.from_user,
     to: row.to_user,
-    amount: Number(row.amount),
+    amount: roundMoney(Number(row.amount)),
     groupId: row.group_id,
     // Map DB created_at to the existing settledAt field used in the UI
     settledAt: row.created_at,

@@ -1,18 +1,19 @@
 import { supabase } from '../supabase/client';
 import type { Expense } from './types';
+import { distributeMoney, roundMoney } from '../shared/money';
 
 const mapExpense = (row: any): Expense => {
   const splits = (row.expense_splits || []) as Array<{ user_id: string; amount_owed: number }>;
   const participants = splits.map((s) => s.user_id);
   const splitAmounts: Record<string, number> = {};
   splits.forEach((s) => {
-    splitAmounts[s.user_id] = Number(s.amount_owed);
+    splitAmounts[s.user_id] = roundMoney(Number(s.amount_owed));
   });
 
   return {
     id: row.id,
     description: row.description,
-    amount: Number(row.amount),
+    amount: roundMoney(Number(row.amount)),
     paidBy: row.paid_by,
     participants,
     groupId: row.group_id,
@@ -54,11 +55,13 @@ export const createExpense = async (expenseData: Omit<Expense, 'id'>) => {
 
   let effectiveSplits: Record<string, number> = {};
   if (splitAmounts && Object.keys(splitAmounts).length > 0) {
-    effectiveSplits = splitAmounts;
+    effectiveSplits = Object.fromEntries(
+      Object.entries(splitAmounts).map(([userId, amount]) => [userId, roundMoney(amount)])
+    );
   } else {
-    const perPerson = rest.amount / participants.length;
-    participants.forEach((userId) => {
-      effectiveSplits[userId] = perPerson;
+    const distributedAmounts = distributeMoney(rest.amount, participants.length);
+    participants.forEach((userId, index) => {
+      effectiveSplits[userId] = distributedAmounts[index];
     });
   }
 
@@ -138,12 +141,14 @@ export const updateExpense = async (expenseId: string, expenseData: Partial<Expe
     // 1) Build the desired splits map
     let effectiveSplits: Record<string, number> = {};
     if (splitAmounts && Object.keys(splitAmounts).length > 0) {
-      effectiveSplits = splitAmounts;
+      effectiveSplits = Object.fromEntries(
+        Object.entries(splitAmounts).map(([userId, amount]) => [userId, roundMoney(amount)])
+      );
     } else if (rest.amount != null) {
       const uniqueParticipants = Array.from(new Set(participants));
-      const perPerson = (rest.amount as number) / uniqueParticipants.length;
-      uniqueParticipants.forEach((userId) => {
-        effectiveSplits[userId] = perPerson;
+      const distributedAmounts = distributeMoney(rest.amount as number, uniqueParticipants.length);
+      uniqueParticipants.forEach((userId, index) => {
+        effectiveSplits[userId] = distributedAmounts[index];
       });
     }
 

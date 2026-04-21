@@ -30,6 +30,7 @@ import {
   deletePushSubscription,
 } from './modules/data';
 import { supabase } from './modules/supabase/client';
+import { distributeMoney, fromMoneyCents, roundMoney, toMoneyCents } from './modules/shared/money';
 import {
   getExistingPushSubscription,
   isInstalledPwa,
@@ -344,6 +345,7 @@ export default function ExpenseSplitApp() {
         };
 
         // 1) Check for an existing session/user on initial load (including OAuth redirect)
+        // Prefer the cached session so a valid PWA login survives reloads and offline starts.
         try {
           const existingUser = await getCurrentUser();
           if (existingUser) {
@@ -615,37 +617,59 @@ export default function ExpenseSplitApp() {
       ? groupExpenses
       : expenses;
 
+    const applyBalance = (debtorId: string, creditorId: string, shareAmount: number) => {
+      const key = `${debtorId}->${creditorId}`;
+      const reverseKey = `${creditorId}->${debtorId}`;
+      const shareCents = toMoneyCents(shareAmount);
+
+      if (balanceMap[reverseKey] !== undefined) {
+        const remainingCents = balanceMap[reverseKey] - shareCents;
+
+        if (remainingCents > 0) {
+          balanceMap[reverseKey] = remainingCents;
+          return;
+        }
+
+        if (remainingCents < 0) {
+          delete balanceMap[reverseKey];
+          balanceMap[key] = (balanceMap[key] || 0) + Math.abs(remainingCents);
+          return;
+        }
+
+        delete balanceMap[reverseKey];
+        return;
+      }
+
+      balanceMap[key] = (balanceMap[key] || 0) + shareCents;
+    };
+
     relevantExpenses.forEach((expense) => {
       const payer = expense.paidBy;
       const participants = expense.participants;
       const getParticipantShare = (participantId: string): number => {
         if (expense.splitAmounts && expense.splitAmounts[participantId] != null) {
-          return expense.splitAmounts[participantId];
+          return roundMoney(expense.splitAmounts[participantId]);
         }
-        return expense.amount / participants.length;
+        const distributedShares = distributeMoney(expense.amount, participants.length);
+        const participantIndex = participants.indexOf(participantId);
+        return distributedShares[participantIndex] ?? 0;
       };
 
       participants.forEach((participantId) => {
         if (participantId !== payer) {
           const shareAmount = getParticipantShare(participantId);
-          // Use a delimiter that does not appear inside UUIDs
-          // so we can safely split it later.
-          const key = `${participantId}->${payer}`;
-          const reverseKey = `${payer}->${participantId}`;
-
-          if (balanceMap[reverseKey]) {
-            balanceMap[reverseKey] -= shareAmount;
-            if (Math.abs(balanceMap[reverseKey]) < 0.01) {
-              delete balanceMap[reverseKey];
-            }
-          } else {
-            balanceMap[key] = (balanceMap[key] || 0) + shareAmount;
-          }
+          applyBalance(participantId, payer, shareAmount);
         }
       });
     });
 
-    setBalances(balanceMap);
+    setBalances(
+      Object.fromEntries(
+        Object.entries(balanceMap)
+          .filter(([, cents]) => cents !== 0)
+          .map(([key, cents]) => [key, fromMoneyCents(cents)])
+      )
+    );
   };
 
   const addNotification = (payload: Omit<Notification, 'id' | 'timestamp'>) => {
@@ -1019,7 +1043,8 @@ export default function ExpenseSplitApp() {
     
     if (splitMode === 'unequal') {
       splitAmounts = {};
-      let totalCustom = 0;
+      let totalCustomCents = 0;
+      const amountCents = toMoneyCents(amount);
       
       for (const participantId of selectedParticipants) {
         const customAmount = parseFloat(customSplits[participantId] || '0');
@@ -1027,12 +1052,13 @@ export default function ExpenseSplitApp() {
           notifyError('Please enter valid amounts for all participants');
           return;
         }
-        splitAmounts[participantId] = customAmount;
-        totalCustom += customAmount;
+        const roundedCustomAmount = roundMoney(customAmount);
+        splitAmounts[participantId] = roundedCustomAmount;
+        totalCustomCents += toMoneyCents(roundedCustomAmount);
       }
       
-      if (Math.abs(totalCustom - amount) > 0.01) {
-        notifyError(`Split amounts (₹${totalCustom.toFixed(2)}) must equal the total (₹${amount.toFixed(2)})`);
+      if (totalCustomCents !== amountCents) {
+        notifyError(`Split amounts (₹${fromMoneyCents(totalCustomCents).toFixed(2)}) must equal the total (₹${amount.toFixed(2)})`);
         return;
       }
     }
@@ -1119,7 +1145,7 @@ export default function ExpenseSplitApp() {
       const settlement = {
         from: fromId,
         to: toId,
-        amount,
+        amount: roundMoney(amount),
         groupId: selectedGroup?.id || null,
         settledAt: new Date().toISOString()
       };
@@ -1131,7 +1157,7 @@ export default function ExpenseSplitApp() {
       // This effectively cancels out the debt
       const newExpense = {
         description: `Settlement: ${getUserName(fromId)} paid ${getUserName(toId)}`,
-        amount: amount,
+        amount: roundMoney(amount),
         paidBy: fromId,
         participants: [toId], // Only the creditor is the participant (receiver)
         groupId: selectedGroup?.id || null,

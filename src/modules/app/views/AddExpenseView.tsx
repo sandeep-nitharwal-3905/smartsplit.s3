@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { Group, User } from '../types';
+import { distributeMoney, fromMoneyCents, roundMoney, sumMoney, toMoneyCents } from '../../shared/money';
 
 interface AddExpenseViewProps {
   isDarkTheme: boolean;
@@ -241,14 +242,14 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                             if (e.target.checked) {
                               setSelectedParticipants([...selectedParticipants, member.id]);
                               if (splitMode === 'unequal' && expenseAmount) {
-                                const existingSplits = selectedParticipants.reduce(
-                                  (sum, id) => sum + parseFloat(customSplits[id] || '0'),
+                                const existingSplitsCents = selectedParticipants.reduce(
+                                  (sum, id) => sum + toMoneyCents(parseFloat(customSplits[id] || '0')),
                                   0
                                 );
-                                const remaining = parseFloat(expenseAmount) - existingSplits;
+                                const remaining = fromMoneyCents(toMoneyCents(parseFloat(expenseAmount)) - existingSplitsCents);
                                 setCustomSplits({
                                   ...customSplits,
-                                  [member.id]: remaining > 0 ? remaining.toFixed(2) : '0',
+                                  [member.id]: remaining > 0 ? roundMoney(remaining).toFixed(2) : '0',
                                 });
                               }
                             } else {
@@ -296,18 +297,19 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                     <p className={isDarkTheme ? 'text-gray-300' : 'text-gray-600'}>
                       Each person pays:{' '}
                       <span className={`font-semibold ${isDarkTheme ? 'text-cyan-400' : 'text-gray-800'}`}>
-                        ₹{(parseFloat(expenseAmount) / selectedParticipants.length).toFixed(2)}
+                        {distributeMoney(parseFloat(expenseAmount), selectedParticipants.length)
+                          .map((share) => `₹${share.toFixed(2)}`)
+                          .join(', ')}
                       </span>
                     </p>
                   ) : (
                     <div className="space-y-1">
                       <p className={`font-medium ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>Custom split:</p>
                       {(() => {
-                        const totalSplit = selectedParticipants.reduce(
-                          (sum, id) => sum + parseFloat(customSplits[id] || '0'),
-                          0
+                        const totalSplit = sumMoney(
+                          selectedParticipants.map((id) => parseFloat(customSplits[id] || '0'))
                         );
-                        const remaining = parseFloat(expenseAmount) - totalSplit;
+                        const remaining = roundMoney(parseFloat(expenseAmount) - totalSplit);
                         return (
                           <>
                             <p className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'}>
@@ -316,7 +318,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                                 ₹{totalSplit.toFixed(2)}
                               </span>
                             </p>
-                            {Math.abs(remaining) > 0.01 && (
+                            {Math.abs(remaining) > 0 && (
                               <p
                                 className={`font-semibold ${
                                   remaining > 0
@@ -331,7 +333,7 @@ export function AddExpenseView(props: AddExpenseViewProps) {
                                 {remaining > 0 ? 'Remaining' : 'Over'}: ₹{Math.abs(remaining).toFixed(2)}
                               </p>
                             )}
-                            {Math.abs(remaining) <= 0.01 && (
+                            {Math.abs(remaining) === 0 && (
                               <p className={`font-semibold ${isDarkTheme ? 'text-green-400' : 'text-green-600'}`}>
                                 ✓ Split matches total
                               </p>

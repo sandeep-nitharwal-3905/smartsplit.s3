@@ -9,5 +9,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'supabase-anon-key-placeholder'
+  supabaseAnonKey || 'supabase-anon-key-placeholder',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+    },
+  }
 );

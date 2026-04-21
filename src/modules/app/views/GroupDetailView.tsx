@@ -1,6 +1,7 @@
 import { Copy, LogOut, Plus, Share2, Trash2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Expense, Group, User } from '../types';
+import { distributeMoney } from '../../shared/money';
 
 interface GroupDetailViewProps {
   isDarkTheme: boolean;
@@ -255,9 +256,7 @@ export function GroupDetailView(props: GroupDetailViewProps) {
                   const canManageExpense = currentUser?.id === expense.createdBy;
                   const userShare =
                     currentUser && expense.participants.includes(currentUser.id)
-                      ? expense.splitAmounts && expense.splitAmounts[expense.participants[0]] !== undefined
-                        ? expense.splitAmounts[currentUser.id] || 0
-                        : expense.amount / expense.participants.length
+                      ? expense.splitAmounts?.[currentUser.id] ?? distributeMoney(expense.amount, expense.participants.length)[expense.participants.indexOf(currentUser.id)] ?? 0
                       : 0;
 
                   const isPayer = expense.paidBy === currentUser?.id;

@@ -110,6 +110,13 @@ export const updatePassword = async (newPassword: string) => {
 };
 
 export const getCurrentUser = async () => {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+
+  if (sessionData.session?.user) {
+    return normalizeUser(sessionData.session.user);
+  }
+
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
   return normalizeUser(data.user) || null;
