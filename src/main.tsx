@@ -6,9 +6,17 @@ import App from './App.tsx'
 import { registerPushServiceWorker } from './modules/push/pwaPush'
 
 if ('serviceWorker' in navigator) {
-  registerPushServiceWorker().catch((error) => {
-    console.error('Service worker registration failed:', error)
-  })
+  const register = () => {
+    registerPushServiceWorker().catch((error) => {
+      console.error('Service worker registration failed:', error)
+    })
+  }
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(register)
+  } else {
+    globalThis.setTimeout(register, 1500)
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

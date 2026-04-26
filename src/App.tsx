@@ -38,7 +38,7 @@ import {
   subscribeToPush,
 } from './modules/push/pwaPush';
 
-const HomePage = lazy(() => import('./components/HomePage'));
+import HomePage from './components/HomePage';
 const FeedbackModal = lazy(() => import('./modules/app/components/FeedbackModal').then((m) => ({ default: m.FeedbackModal })));
 const AddExpenseView = lazy(() => import('./modules/app/views/AddExpenseView').then((m) => ({ default: m.AddExpenseView })));
 const AddFriendView = lazy(() => import('./modules/app/views/AddFriendView').then((m) => ({ default: m.AddFriendView })));
@@ -301,9 +301,11 @@ export default function ExpenseSplitApp() {
 
             setCurrentUser(user);
 
-            // Load user data
-            await loadUserData(user.id);
-            await loadFriends(user.id);
+            // Load user data in the background so the first screen can render sooner.
+            void Promise.all([
+              loadUserData(user.id),
+              loadFriends(user.id),
+            ]);
 
             // Check for pending join parameter from sessionStorage
             try {
@@ -350,6 +352,8 @@ export default function ExpenseSplitApp() {
           const existingUser = await getCurrentUser();
           if (existingUser) {
             await handleAuthUser(existingUser);
+          } else {
+            await handleAuthUser(null);
           }
         } catch (e) {
           console.warn('Error getting current user on init:', e);
