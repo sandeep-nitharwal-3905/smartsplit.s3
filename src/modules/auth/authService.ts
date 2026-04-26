@@ -109,6 +109,18 @@ export const updatePassword = async (newPassword: string) => {
   return true;
 };
 
+export const updateCurrentUserProfile = async (fullName: string) => {
+  const { error } = await supabase.auth.updateUser({
+    data: {
+      full_name: fullName,
+      name: fullName,
+    },
+  });
+
+  if (error) throw error;
+  return true;
+};
+
 export const getCurrentUser = async () => {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;

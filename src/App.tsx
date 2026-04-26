@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { NotificationToast } from './modules/app/components/NotificationToast';
 import type { Group, User, Expense, Notification } from './modules/app/types';
-import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword } from './modules/auth/authService';
+import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword, updateCurrentUserProfile } from './modules/auth/authService';
 import {
   createGroup as createSupabaseGroup,
   getUserGroups,
@@ -292,10 +292,21 @@ export default function ExpenseSplitApp() {
       try {
         const handleAuthUser = async (authUser: any | null) => {
           if (authUser) {
+            let profileName: string | null = null;
+
+            try {
+              const profileRows = await getUsers([authUser.uid]);
+              if (profileRows.length > 0 && profileRows[0]?.name) {
+                profileName = profileRows[0].name;
+              }
+            } catch (profileError) {
+              console.warn('Failed to load profile name from profiles table:', profileError);
+            }
+
             const user: User = {
               id: authUser.uid,
               email: authUser.email || '',
-              name: authUser.displayName || authUser.email?.split('@')[0] || 'User',
+              name: profileName || authUser.displayName || authUser.email?.split('@')[0] || 'User',
               createdAt: authUser.metadata.creationTime
             };
 
@@ -1422,6 +1433,8 @@ export default function ExpenseSplitApp() {
     if (!currentUser) return;
     
     try {
+      await updateCurrentUserProfile(newName);
+
       await upsertProfile({
         id: currentUser.id,
         email: currentUser.email,

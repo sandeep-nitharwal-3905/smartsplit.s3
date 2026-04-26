@@ -184,7 +184,20 @@
     "name": "Name",
     "email": "Email",
     "updateProfile": "Update Profile",
-    "profileUpdated": "Profile updated successfully!"
+    "profileUpdated": "Profile updated successfully!",
+    "enterYourName": "Enter your name",
+    "emailCannotBeChanged": "Email cannot be changed",
+    "memberSince": "Member Since",
+    "na": "N/A",
+    "pwaNotifications": "PWA Notifications",
+    "notificationsOn": "Notifications on",
+    "notificationsOff": "Notifications off",
+    "turnOffExpenseAlerts": "Turn off expense alerts on this device.",
+    "enableExpenseAlerts": "Enable expense alerts for this device.",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "editProfile": "Edit Profile"
   },
   "addGroup": {
     "createGroup": "Create Group",

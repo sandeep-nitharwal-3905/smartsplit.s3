@@ -1,5 +1,5 @@
 import { ArrowLeft, Bell, Mail, User as UserIcon, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { User } from '../types';
 
@@ -28,6 +28,12 @@ export function UserProfileView({
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(currentUser?.name || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setName(currentUser?.name || '');
+    }
+  }, [currentUser?.name, isEditing]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -111,7 +117,7 @@ export function UserProfileView({
                   } focus:outline-none focus:ring-2 ${
                     isDarkTheme ? 'focus:ring-cyan-500' : 'focus:ring-teal-500'
                   }`}
-                  placeholder="Enter your name"
+                  placeholder={t('profile.enterYourName')}
                 />
               ) : (
                 <div
@@ -146,7 +152,7 @@ export function UserProfileView({
                   isDarkTheme ? 'text-gray-400' : 'text-gray-500'
                 }`}
               >
-                Email cannot be changed
+                {t('profile.emailCannotBeChanged')}
               </p>
             </div>
 
@@ -157,7 +163,7 @@ export function UserProfileView({
                   isDarkTheme ? 'text-gray-300' : 'text-gray-700'
                 }`}
               >
-                Member Since
+                {t('profile.memberSince')}
               </label>
               <div
                 className={`p-3 rounded-lg ${
@@ -170,7 +176,7 @@ export function UserProfileView({
                       month: 'long',
                       day: 'numeric',
                     })
-                  : 'N/A'}
+                  : t('profile.na')}
               </div>
             </div>
 
@@ -183,7 +189,7 @@ export function UserProfileView({
                   }`}
                 >
                   <Bell className="w-4 h-4 inline mr-2" />
-                  PWA Notifications
+                  {t('profile.pwaNotifications')}
                 </label>
                 <button
                   type="button"
@@ -198,12 +204,12 @@ export function UserProfileView({
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <div className={`text-sm font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        {pushEnabled ? 'Notifications on' : 'Notifications off'}
+                        {pushEnabled ? t('profile.notificationsOn') : t('profile.notificationsOff')}
                       </div>
                       <p className={`text-xs mt-1 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                         {pushEnabled
-                          ? 'Turn off expense alerts on this device.'
-                          : 'Enable expense alerts for this device.'}
+                          ? t('profile.turnOffExpenseAlerts')
+                          : t('profile.enableExpenseAlerts')}
                       </p>
                     </div>
                     <div
@@ -241,7 +247,7 @@ export function UserProfileView({
                     } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <Save className="w-5 h-5" />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? t('profile.saving') : t('profile.saveChanges')}
                   </button>
                   <button
                     onClick={handleCancel}
@@ -252,7 +258,7 @@ export function UserProfileView({
                         : 'bg-gray-200 hover:bg-gray-300'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    Cancel
+                    {t('profile.cancel')}
                   </button>
                 </>
               ) : (
@@ -264,7 +270,7 @@ export function UserProfileView({
                       : 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
                   } text-white`}
                 >
-                  Edit Profile
+                  {t('profile.editProfile')}
                 </button>
               )}
             </div>

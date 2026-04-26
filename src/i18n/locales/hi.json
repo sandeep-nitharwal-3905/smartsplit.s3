@@ -184,7 +184,20 @@
     "name": "नाम",
     "email": "ईमेल",
     "updateProfile": "प्रोफ़ाइल अपडेट करें",
-    "profileUpdated": "प्रोफ़ाइल सफलतापूर्वक अपडेट किया गया!"
+    "profileUpdated": "प्रोफ़ाइल सफलतापूर्वक अपडेट किया गया!",
+    "enterYourName": "अपना नाम दर्ज करें",
+    "emailCannotBeChanged": "ईमेल बदला नहीं जा सकता",
+    "memberSince": "सदस्य बने",
+    "na": "उपलब्ध नहीं",
+    "pwaNotifications": "पीडब्ल्यूए नोटिफिकेशन",
+    "notificationsOn": "नोटिफिकेशन चालू",
+    "notificationsOff": "नोटिफिकेशन बंद",
+    "turnOffExpenseAlerts": "इस डिवाइस पर खर्च अलर्ट बंद करें।",
+    "enableExpenseAlerts": "इस डिवाइस के लिए खर्च अलर्ट चालू करें।",
+    "saving": "सेव हो रहा है...",
+    "saveChanges": "परिवर्तन सेव करें",
+    "cancel": "रद्द करें",
+    "editProfile": "प्रोफ़ाइल संपादित करें"
   },
   "addGroup": {
     "createGroup": "समूह बनाएं",
