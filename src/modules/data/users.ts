@@ -2,12 +2,20 @@ import { supabase } from '../supabase/client';
 import type { Profile } from './types';
 
 export const upsertProfile = async (profile: Profile) => {
-  const { error } = await supabase.from('profiles').upsert({
-    id: profile.id,
-    email: profile.email,
-    name: profile.name,
-  });
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      email: profile.email,
+      name: profile.name,
+    })
+    .eq('id', profile.id)
+    .select('id')
+    .maybeSingle();
+
   if (error) throw error;
+  if (!data) {
+    throw new Error('Profile row not found for current user.');
+  }
 };
 
 export const getUserByEmail = async (email: string) => {

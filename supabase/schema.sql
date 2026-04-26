@@ -142,6 +142,11 @@ create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.profiles;
+create policy "Users can insert own profile"
+  on public.profiles for insert
+  with check (auth.uid() = id);
+
 -- GROUPS
 -- Allow viewing any group (needed for join functionality via invite links)
 -- Users still need proper permissions to modify or see group details
