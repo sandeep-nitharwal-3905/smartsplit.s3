@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'react';
 import { NotificationToast } from './modules/app/components/NotificationToast';
 import type { Group, User, Expense, Notification } from './modules/app/types';
 import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword, updateCurrentUserProfile } from './modules/auth/authService';
@@ -150,6 +150,15 @@ export default function ExpenseSplitApp() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  type DashboardPendingSettlementEntry = {
+    key: string;
+    fromId: string;
+    toId: string;
+    groupId: string;
+    groupName: string;
+    amount: number;
+  };
 
   useEffect(() => {
     calculateBalances();
@@ -685,6 +694,86 @@ export default function ExpenseSplitApp() {
           .map(([key, cents]) => [key, fromMoneyCents(cents)])
       )
     );
+  };
+
+  const dashboardPendingSettlementEntries = useMemo<DashboardPendingSettlementEntry[]>(() => {
+    const groupBalanceMap: Record<string, number> = {};
+
+    const applyGroupBalance = (groupId: string, debtorId: string, creditorId: string, shareAmount: number) => {
+      const key = `${groupId}|${debtorId}->${creditorId}`;
+      const reverseKey = `${groupId}|${creditorId}->${debtorId}`;
+      const shareCents = toMoneyCents(shareAmount);
+
+      if (groupBalanceMap[reverseKey] !== undefined) {
+        const remainingCents = groupBalanceMap[reverseKey] - shareCents;
+
+        if (remainingCents > 0) {
+          groupBalanceMap[reverseKey] = remainingCents;
+          return;
+        }
+
+        if (remainingCents < 0) {
+          delete groupBalanceMap[reverseKey];
+          groupBalanceMap[key] = (groupBalanceMap[key] || 0) + Math.abs(remainingCents);
+          return;
+        }
+
+        delete groupBalanceMap[reverseKey];
+        return;
+      }
+
+      groupBalanceMap[key] = (groupBalanceMap[key] || 0) + shareCents;
+    };
+
+    expenses.forEach((expense) => {
+      if (!expense.groupId) return;
+
+      const payer = expense.paidBy;
+      const participants = expense.participants;
+      const distributedShares = distributeMoney(expense.amount, participants.length);
+
+      participants.forEach((participantId, participantIndex) => {
+        if (participantId === payer) return;
+
+        const shareAmount = expense.splitAmounts && expense.splitAmounts[participantId] != null
+          ? roundMoney(expense.splitAmounts[participantId])
+          : distributedShares[participantIndex] ?? 0;
+
+        applyGroupBalance(expense.groupId as string, participantId, payer, shareAmount);
+      });
+    });
+
+    return Object.entries(groupBalanceMap)
+      .filter(([, cents]) => cents > 0)
+      .map(([rawKey, cents]) => {
+        const [groupId, pair] = rawKey.split('|');
+        const [fromId, toId] = pair.includes('->') ? pair.split('->') : pair.split('-');
+        const groupName = groups.find((group) => group.id === groupId)?.name || 'Unknown group';
+
+        return {
+          key: `${groupId}|${fromId}->${toId}`,
+          fromId,
+          toId,
+          groupId,
+          groupName,
+          amount: fromMoneyCents(cents),
+        };
+      })
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenses, groups]);
+
+  const openGroupForSettlement = (groupId: string) => {
+    const targetGroup = groups.find((group) => group.id === groupId);
+
+    if (!targetGroup) {
+      notifyError('Unable to find the group for this pending balance.', 'settlement');
+      return;
+    }
+
+    setSelectedGroup(targetGroup);
+    setIsEditingGroupName(false);
+    setEditGroupName('');
+    navigateTo('groupDetail');
   };
 
   const addNotification = (payload: Omit<Notification, 'id' | 'timestamp'>) => {
@@ -1544,7 +1633,7 @@ export default function ExpenseSplitApp() {
             currentUser={currentUser}
             groups={groups}
             friends={friends}
-            balances={balances}
+            pendingSettlementEntries={dashboardPendingSettlementEntries}
             expenses={expenses}
             setView={navigateTo}
             setSelectedGroup={(group) => {
@@ -1560,6 +1649,7 @@ export default function ExpenseSplitApp() {
             deleteExpense={deleteExpense}
             copyGroupLink={copyGroupLink}
             copyGroupId={copyGroupId}
+            openGroupForSettlement={openGroupForSettlement}
             showJoinLinkModal={showJoinLinkModal}
             setShowJoinLinkModal={setShowJoinLinkModal}
             joinGroupId={joinGroupId}

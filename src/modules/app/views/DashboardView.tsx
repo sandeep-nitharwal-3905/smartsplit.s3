@@ -29,12 +29,20 @@ interface DashboardViewProps {
   currentUser: AppUser | null;
   groups: Group[];
   friends: AppUser[];
-  balances: Record<string, number>;
+  pendingSettlementEntries: Array<{
+    key: string;
+    fromId: string;
+    toId: string;
+    groupId: string;
+    groupName: string;
+    amount: number;
+  }>;
   expenses: Expense[];
   setView: (view: string) => void;
   setSelectedGroup: (group: Group | null) => void;
   handleLogout: () => void;
   handleSettleUp: (fromId: string, toId: string, amount: number) => void;
+  openGroupForSettlement: (groupId: string) => void;
   getUserName: (userId: string) => string;
   formatDateTime: (dateInput: any) => string;
   startEditExpense: (expense: Expense) => void;
@@ -72,12 +80,12 @@ export function DashboardView(props: DashboardViewProps) {
     currentUser,
     groups,
     friends,
-    balances,
+    pendingSettlementEntries,
     expenses,
     setView,
     setSelectedGroup,
     handleLogout,
-    handleSettleUp,
+    openGroupForSettlement,
     getUserName,
     showJoinLinkModal,
     setShowJoinLinkModal,
@@ -140,12 +148,11 @@ export function DashboardView(props: DashboardViewProps) {
     };
   }, [isBlessingOpen]);
 
-  // Only show balances that involve the current user (either owes or will receive)
-  const balanceEntries = Object.entries(balances);
+  // Only show pending settlements that involve the current user (either owes or will receive)
+  const balanceEntries = pendingSettlementEntries;
   const userBalanceEntries = currentUser
-    ? balanceEntries.filter(([key]) => {
-        const [fromId, toId] = key.includes('->') ? key.split('->') : key.split('-');
-        return fromId === currentUser.id || toId === currentUser.id;
+    ? balanceEntries.filter((entry) => {
+        return entry.fromId === currentUser.id || entry.toId === currentUser.id;
       })
     : balanceEntries;
 
@@ -430,9 +437,7 @@ export function DashboardView(props: DashboardViewProps) {
               <p className={`text-sm sm:text-base ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>All settled up!</p>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {userBalanceEntries.map(([key, amount]) => {
-                  // New keys use '->' as delimiter; fall back to '-' for any legacy keys
-                  const [fromId, toId] = key.includes('->') ? key.split('->') : key.split('-');
+                {userBalanceEntries.map(({ key, fromId, toId, amount, groupId, groupName }) => {
                   return (
                     <div
                       key={key}
@@ -441,8 +446,8 @@ export function DashboardView(props: DashboardViewProps) {
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
                         <span className={`text-xs sm:text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
                           {fromId === currentUser?.id 
-                            ? `${t('dashboard.youOwe')} ${getUserName(toId)}`
-                            : `${getUserName(fromId)} ${t('dashboard.owesYou')}`
+                            ? `${t('dashboard.youOwe')} ${getUserName(toId)} (${groupName})`
+                            : `${getUserName(fromId)} ${t('dashboard.owesYou')} (${groupName})`
                           }
                         </span>
                         <span className={`font-bold text-sm sm:text-base ${isDarkTheme ? 'text-cyan-400' : 'text-teal-600'}`}>
@@ -451,14 +456,14 @@ export function DashboardView(props: DashboardViewProps) {
                       </div>
                       {fromId === currentUser?.id && (
                         <button
-                          onClick={() => handleSettleUp(fromId, toId, amount)}
+                          onClick={() => openGroupForSettlement(groupId)}
                           className={`text-xs sm:text-sm px-3 py-1 sm:py-1.5 rounded transition ${
                             isDarkTheme
                               ? 'bg-green-600 text-white hover:bg-green-700'
                               : 'bg-green-500 text-white hover:bg-green-600'
                           }`}
                         >
-                          Settle Up
+                          Settle in {groupName}
                         </button>
                       )}
                     </div>
