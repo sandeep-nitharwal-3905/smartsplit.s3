@@ -119,7 +119,13 @@ export default function ExpenseSplitApp() {
   const [editGroupName, setEditGroupName] = useState('');
 
   // Theme state
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    try {
+      return localStorage.getItem('theme') === 'dark';
+    } catch {
+      return false;
+    }
+  });
   const [pushSupported, setPushSupported] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isPushActionLoading, setIsPushActionLoading] = useState(false);
@@ -132,13 +138,6 @@ export default function ExpenseSplitApp() {
       return next;
     });
   };
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('theme');
-      if (stored) setIsDarkTheme(stored === 'dark');
-    } catch {}
-  }, []);
-
   // Reset password sent state when modal is closed
   useEffect(() => {
     if (!showForgotPassword) {
@@ -312,6 +311,8 @@ export default function ExpenseSplitApp() {
               console.warn('Failed to load profile name from profiles table:', profileError);
             }
 
+            void import('./modules/app/views/DashboardView');
+
             const user: User = {
               id: authUser.uid,
               email: authUser.email || '',
@@ -321,10 +322,11 @@ export default function ExpenseSplitApp() {
 
             setCurrentUser(user);
 
-            // Load user data in the background so the first screen can render sooner.
-            void Promise.all([
+            // Keep the startup screen visible until the first authenticated dataset is ready.
+            await Promise.all([
               loadUserData(user.id),
               loadFriends(user.id),
+              loadUserExpenses(user.id),
             ]);
 
             // Check for pending join parameter from sessionStorage
@@ -603,11 +605,12 @@ export default function ExpenseSplitApp() {
     }
   };
 
-  const loadUserExpenses = async () => {
-    if (!currentUser) return;
+  const loadUserExpenses = async (userId?: string) => {
+    const uid = userId || currentUser?.id;
+    if (!uid) return;
     
     try {
-      const userExpenses = await getUserExpenses(currentUser.id);
+      const userExpenses = await getUserExpenses(uid);
       const normalizedExpenses = userExpenses as Expense[];
       setExpenses(normalizedExpenses);
       hasHydratedUserExpensesRef.current = true;
