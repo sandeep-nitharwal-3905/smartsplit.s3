@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'react';
 import { NotificationToast } from './modules/app/components/NotificationToast';
 import type { Group, User, Expense, Notification } from './modules/app/types';
-import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword, updateCurrentUserProfile } from './modules/auth/authService';
+import { onAuthStateChange, signUpUser, signInUser, logoutUser, signInWithGoogle, getCurrentUser, resetPassword, updatePassword } from './modules/auth/authService';
 import {
   createGroup as createSupabaseGroup,
   getUserGroups,
@@ -38,7 +38,7 @@ import {
   subscribeToPush,
 } from './modules/push/pwaPush';
 
-import HomePage from './components/HomePage';
+const HomePage = lazy(() => import('./components/HomePage'));
 const FeedbackModal = lazy(() => import('./modules/app/components/FeedbackModal').then((m) => ({ default: m.FeedbackModal })));
 const AddExpenseView = lazy(() => import('./modules/app/views/AddExpenseView').then((m) => ({ default: m.AddExpenseView })));
 const AddFriendView = lazy(() => import('./modules/app/views/AddFriendView').then((m) => ({ default: m.AddFriendView })));
@@ -119,13 +119,7 @@ export default function ExpenseSplitApp() {
   const [editGroupName, setEditGroupName] = useState('');
 
   // Theme state
-  const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    try {
-      return localStorage.getItem('theme') === 'dark';
-    } catch {
-      return false;
-    }
-  });
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [pushSupported, setPushSupported] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isPushActionLoading, setIsPushActionLoading] = useState(false);
@@ -138,6 +132,13 @@ export default function ExpenseSplitApp() {
       return next;
     });
   };
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('theme');
+      if (stored) setIsDarkTheme(stored === 'dark');
+    } catch {}
+  }, []);
+
   // Reset password sent state when modal is closed
   useEffect(() => {
     if (!showForgotPassword) {
@@ -300,34 +301,18 @@ export default function ExpenseSplitApp() {
       try {
         const handleAuthUser = async (authUser: any | null) => {
           if (authUser) {
-            let profileName: string | null = null;
-
-            try {
-              const profileRows = await getUsers([authUser.uid]);
-              if (profileRows.length > 0 && profileRows[0]?.name) {
-                profileName = profileRows[0].name;
-              }
-            } catch (profileError) {
-              console.warn('Failed to load profile name from profiles table:', profileError);
-            }
-
-            void import('./modules/app/views/DashboardView');
-
             const user: User = {
               id: authUser.uid,
               email: authUser.email || '',
-              name: profileName || authUser.displayName || authUser.email?.split('@')[0] || 'User',
+              name: authUser.displayName || authUser.email?.split('@')[0] || 'User',
               createdAt: authUser.metadata.creationTime
             };
 
             setCurrentUser(user);
 
-            // Keep the startup screen visible until the first authenticated dataset is ready.
-            await Promise.all([
-              loadUserData(user.id),
-              loadFriends(user.id),
-              loadUserExpenses(user.id),
-            ]);
+            // Load user data
+            await loadUserData(user.id);
+            await loadFriends(user.id);
 
             // Check for pending join parameter from sessionStorage
             try {
@@ -374,8 +359,6 @@ export default function ExpenseSplitApp() {
           const existingUser = await getCurrentUser();
           if (existingUser) {
             await handleAuthUser(existingUser);
-          } else {
-            await handleAuthUser(null);
           }
         } catch (e) {
           console.warn('Error getting current user on init:', e);
@@ -605,12 +588,11 @@ export default function ExpenseSplitApp() {
     }
   };
 
-  const loadUserExpenses = async (userId?: string) => {
-    const uid = userId || currentUser?.id;
-    if (!uid) return;
+  const loadUserExpenses = async () => {
+    if (!currentUser) return;
     
     try {
-      const userExpenses = await getUserExpenses(uid);
+      const userExpenses = await getUserExpenses(currentUser.id);
       const normalizedExpenses = userExpenses as Expense[];
       setExpenses(normalizedExpenses);
       hasHydratedUserExpensesRef.current = true;
@@ -1525,8 +1507,6 @@ export default function ExpenseSplitApp() {
     if (!currentUser) return;
     
     try {
-      await updateCurrentUserProfile(newName);
-
       await upsertProfile({
         id: currentUser.id,
         email: currentUser.email,
